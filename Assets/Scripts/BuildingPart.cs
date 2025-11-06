@@ -8,7 +8,17 @@ public class BuildingPart : MonoBehaviour
 {
     public Brick brick;
     public Quoin quoin;
+    public Shingle shingle;
     public GameObject storage;
+
+    [Range(0.5f, 1.75f)]
+    public float roofCurve = 1.0f;
+
+    [Range(0.1f, 2.0f)]
+    public float roofHeight = 2.0f;
+
+    [Range(0.0f, 1.0f)]
+    public float ridgeLength = 0.5f;
 
     //private float defaultBrickHeight = 0.25f;
     //private float defaultBrickLength = 0.0125f;
@@ -105,11 +115,7 @@ public class BuildingPart : MonoBehaviour
                         transform.position.z + direction * ((transform.localScale.z / 2.0f) + 0.05f)
                     );
                 }
-
-                if (newWidth < 0.0f || heightOfBrick < 0.0f)
-                {
-                    Debug.Log("Yikes!");
-                }
+                
                 newBrick.name = "Brick[" + i + "," + j + "]" + rotation;
 
                 newBrick.transform.localEulerAngles = new Vector3(0.0f, rotation, 0.0f);
@@ -119,7 +125,7 @@ public class BuildingPart : MonoBehaviour
 
                 float splitNoise = Mathf.PerlinNoise(i / 0.8f, j / 0.8f);
                 float splitLocation = 0.7f * (Mathf.PerlinNoise(i / 0.3f, j / 0.3f) - 0.5f);
-                if (splitNoise > 0.65f) newBrick.Split(splitLocation);
+                if (splitNoise > 0.65f) newBrick.Split(splitLocation);/**/
 
                 /*if (i != 0 && i != numBricksTall - 1)
                 {
@@ -171,21 +177,153 @@ public class BuildingPart : MonoBehaviour
         {
             GameObject childObject = childTransform.gameObject;
 
-            if (childObject.TryGetComponent<Quoin>(out Quoin quoin)) quoin.DeletePls(); 
-            if (childObject.TryGetComponent<Brick>(out Brick brick)) brick.DeletePls(); 
+            if (childObject.TryGetComponent<Quoin>(out Quoin quoin)) quoin.DeletePls();
+            if (childObject.TryGetComponent<Brick>(out Brick brick)) brick.DeletePls();
+            if (childObject.TryGetComponent<Shingle>(out Shingle shingle)) shingle.DeletePls();
         }
 
         InitBricks();
+        InitRoof();
 
         Physics.simulationMode = SimulationMode.Script;
         Physics.Simulate(Time.fixedDeltaTime);
         Physics.simulationMode = SimulationMode.FixedUpdate;
     }
 
+    private float EstimateArcLength(float xDist)
+    {
+        int numSteps = 20;
+        float arcLength = 0.0f;
+        Vector2 previousPoint = Vector2.zero;
+
+        for (int i = 1; i <= numSteps; i++)
+        {
+            float x = i / (float)numSteps;
+            Vector2 currentPoint = new Vector2(x * xDist, Mathf.Pow(x, roofCurve) * roofHeight);
+            arcLength += Vector2.Distance(previousPoint, currentPoint);
+            previousPoint = currentPoint;
+        }
+
+        return arcLength;
+    }
+    
+    void PlaceShingles(float width, float depth, float otherWidth, bool flip)
+    {
+        int numShinglesWide = Mathf.RoundToInt(width / 0.1f);
+        float widthOfShingle = width / numShinglesWide;
+
+        float arcLength = EstimateArcLength(depth);
+        int numShinglesTall = Mathf.RoundToInt(arcLength / 0.1f);
+        float lengthOfShingle = arcLength / numShinglesTall;
+
+        float current = Mathf.Epsilon;
+
+        while (current < 1.0f)
+        {
+            float xShift = current * depth;
+            float yShift = Mathf.Pow(current, roofCurve) * roofHeight;
+
+            for (int j = 0; j < numShinglesWide; j++)
+            {
+                if (yShift > Mathf.Pow((j * widthOfShingle) / otherWidth, roofCurve) * roofHeight) continue;
+                
+                Shingle newShingle = Instantiate(shingle);
+
+                if (flip)
+                {
+                    newShingle.transform.localPosition = new Vector3(
+                            transform.position.x + (transform.localScale.x / 2.0f) - (j * widthOfShingle),
+                            transform.position.y + (transform.localScale.y / 2.0f) + yShift,
+                            transform.position.z + (transform.localScale.z / 2.0f) - xShift
+                        );
+                }
+                else
+                {
+                    newShingle.transform.localPosition = new Vector3(
+                            transform.position.x + (transform.localScale.x / 2.0f) - xShift,
+                            transform.position.y + (transform.localScale.y / 2.0f) + yShift,
+                            transform.position.z + (transform.localScale.z / 2.0f) - (j * widthOfShingle)
+                        );
+                }
+
+                newShingle.transform.localScale = new Vector3(0.1f, 0.1f, widthOfShingle);
+                newShingle.transform.SetParent(storage.transform);
+            }
+
+            float step = 0.0f;
+            Vector2 currentPoint = new Vector2(xShift, yShift);
+            Vector2 nextPoint = new Vector2((current + step) * depth, Mathf.Pow(current + step, roofCurve) * roofHeight);
+
+            while (Vector2.Distance(currentPoint, nextPoint) < lengthOfShingle)
+            {
+                step += 0.001f;
+                nextPoint.x = (current + step) * depth;
+                nextPoint.y = Mathf.Pow(current + step, roofCurve) * roofHeight;
+            }
+
+            current += step;
+        }
+    }
+
+    void InitRoof()
+    {
+        float amount = ridgeLength * (transform.localScale.z / 2.0f);
+
+        int numShinglesWide = Mathf.RoundToInt(transform.localScale.z / 0.1f);
+        float widthOfShingle = transform.localScale.z / numShinglesWide;
+
+        float arcLength = EstimateArcLength(transform.localScale.x / 2.0f);
+        int numShinglesTall = Mathf.RoundToInt(arcLength / 0.1f);
+        float lengthOfShingle = arcLength / numShinglesTall;
+
+        float current = Mathf.Epsilon;
+
+        while (current < 1.0f)
+        {
+            float xShift = current * (transform.localScale.x / 2.0f);
+            float yShift = Mathf.Pow(current, roofCurve) * roofHeight;
+
+            for (int j = 0; j < numShinglesWide; j++)
+            {
+                if (yShift > Mathf.Pow((j * widthOfShingle) / amount, roofCurve) * roofHeight) continue;
+
+                Shingle newShingle = Instantiate(shingle);
+
+                newShingle.transform.localPosition = new Vector3(
+                        transform.position.x + (transform.localScale.x / 2.0f) - xShift,
+                        transform.position.y + (transform.localScale.y / 2.0f) + yShift,
+                        transform.position.z + (transform.localScale.z / 2.0f) - (j * widthOfShingle)
+                    );
+
+                newShingle.transform.localScale = new Vector3(0.1f, 0.1f, widthOfShingle);
+                newShingle.transform.SetParent(storage.transform);
+            }
+
+            //Vector2 tangent = new Vector2(1.0f, roofCurve * Mathf.Pow(current, roofCurve - 1.0f));
+            //tangent.Normalize();
+
+            float step = 0.0f;
+            Vector2 currentPoint = new Vector2(xShift, yShift);
+            Vector2 nextPoint = new Vector2((current + step) * (transform.localScale.x / 2.0f), Mathf.Pow(current + step, roofCurve) * roofHeight);
+
+            while (Vector2.Distance(currentPoint, nextPoint) < lengthOfShingle)
+            {
+                step += 0.001f;
+                nextPoint.x = (current + step) * (transform.localScale.x / 2.0f);
+                nextPoint.y = Mathf.Pow(current + step, roofCurve) * roofHeight;
+            }
+
+            current += step;
+        }
+
+        PlaceShingles(transform.localScale.x, amount, transform.localScale.x / 2.0f, true);
+    }
+
     // Start is called before the first frame update
     void Start()
     {
         InitBricks();
+        InitRoof();
     }
 
     // Update is called once per frame

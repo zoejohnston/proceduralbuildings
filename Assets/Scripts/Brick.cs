@@ -84,42 +84,33 @@ public class Brick : MonoBehaviour
         ResizeTop(p);
     }
 
-    void OnTriggerEnter(Collider other)
+    private bool CloseEnough(Vector3 p1, Vector3 p2)
     {
-        if ((!checkCollisions) || other.gameObject.transform.parent != transform.parent)
+        return Vector3.Distance(p1, p2) < 0.01f;
+    }
+
+    public void OnTriggerEnter(Collider other)
+    {
+        if ((!checkCollisions) || !other.gameObject.transform.parent)// || other.gameObject.transform.parent != transform.parent)
         {
             return;
         }
 
-        Collider self = gameObject.GetComponent<BoxCollider>();
-
-        if (other.gameObject.GetComponent<Quoin>())
+        if (other.gameObject.transform.parent.gameObject.GetComponent<Quoin>() ||
+            other.gameObject.transform.parent.gameObject.GetComponent<Window>())
         {
             Vector3 topLeft = transform.TransformPoint(new Vector3(0.0f, 0.5f, 0.5f));
             Vector3 topRight = transform.TransformPoint(new Vector3(0.0f, 0.5f, -0.5f));
             Vector3 bottomLeft = transform.TransformPoint(new Vector3(0.0f, -0.5f, 0.5f));
             Vector3 bottomRight = transform.TransformPoint(new Vector3(0.0f, -0.5f, -0.5f));
 
-            bool topLeftCollision = other.bounds.Contains(topLeft);
-            bool topRightCollision = other.bounds.Contains(topRight);
-            bool bottomLeftCollision = other.bounds.Contains(bottomLeft);
-            bool bottomRightCollision = other.bounds.Contains(bottomRight);
+            bool topLeftCollision = CloseEnough(other.ClosestPoint(topLeft), topLeft);
+            bool topRightCollision = CloseEnough(other.ClosestPoint(topRight), topRight);
+            bool bottomLeftCollision = CloseEnough(other.ClosestPoint(bottomLeft), bottomLeft);
+            bool bottomRightCollision = CloseEnough(other.ClosestPoint(bottomRight), bottomRight);
 
             bool[] cornerChecks = new bool[] { topLeftCollision, topRightCollision, bottomLeftCollision, bottomRightCollision };
             int cornerChecksFailed = cornerChecks.Count(b => b);
-
-            /*if (name == "Brick[2,1]270")
-            {
-                Debug.Log("checks failed: " + cornerChecksFailed);
-                Debug.Log(topLeftCollision + " " + topRightCollision + " " + bottomLeftCollision + " " + bottomRightCollision);
-                Debug.Log(other.bounds.Contains(other.gameObject.transform.InverseTransformPoint(bottomLeft)));
-                if (other.bounds.Contains(bottomLeft))
-                {
-                    Debug.Log(other.gameObject.name);
-                    Debug.DrawLine(bottomLeft, other.bounds.min, Color.red, 20.0f, false);
-                    Debug.DrawLine(bottomLeft, other.bounds.max, Color.red, 20.0f, false);
-                }
-            }*/
 
             if (cornerChecksFailed == 4)
             {
@@ -212,11 +203,11 @@ public class Brick : MonoBehaviour
                     GameObject newBrickObject = Instantiate(gameObject);
                     Brick newBrick = newBrickObject.GetComponent<Brick>();
                     newBrickObject.transform.SetParent(transform.parent);
-                    newBrick.ResizeTop(otherPoint.y);
+                    newBrick.ResizeTop(otherPoint.y + 0.025f);
                     newBrick.ResizeRight(otherPoint.z);
                     checkCollisions = true;
 
-                    ResizeBottom(otherPoint.y);
+                    ResizeBottom(otherPoint.y + 0.025f);
                 }
             }
         }
