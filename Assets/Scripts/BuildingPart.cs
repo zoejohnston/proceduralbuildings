@@ -225,63 +225,108 @@ public class BuildingPart : MonoBehaviour
 
         return step;
     }
-    
-    void PlaceShingles(float width, float depth, float otherWidth, bool flip, float side, bool snapped)
-    {
-        int numShinglesWide = Mathf.RoundToInt(width / 0.1f);
-        float widthOfShingle = width / numShinglesWide;
 
+    void InstantiateCornerShingle(float xShift, float yShift, float current, float otherWidth, float width, float side, float which)
+    {
+        Brick newShingle = Instantiate(brick);
+        newShingle.transform.localPosition = new Vector3(
+            transform.position.x + side * ((transform.localScale.x / 2.0f) - xShift),
+            transform.position.y + (transform.localScale.y / 2.0f) + yShift,
+            transform.position.z + (which * ((width / 2.0f) - (current * otherWidth)))
+        );
+        newShingle.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+        newShingle.transform.SetParent(storage.transform);
+    }
+    
+    void PlaceCornerShingles(float width, float depth, float otherWidth, bool flip, float side, bool snapped)
+    {
         float arcLength = EstimateArcLength(depth);
         int numShinglesTall = Mathf.RoundToInt(arcLength / 0.1f);
         float lengthOfShingle = arcLength / numShinglesTall;
 
         float current = Mathf.Epsilon;
 
-        while (current < 1.0f)
+        Vector2 firstTangent = new Vector2(1.0f, roofHeight * roofCurve * Mathf.Pow(current, roofCurve - 1.0f));
+        firstTangent.Normalize();
+        firstTangent *= lengthOfShingle;
+        Vector2 previous = new Vector2(current * depth, Mathf.Pow(current, roofCurve) * roofHeight);
+        previous -= firstTangent;
+
+        Vector2 shift = new Vector2(current * depth, Mathf.Pow(current, roofCurve) * roofHeight);
+
+        while (current <= 1.0f + Mathf.Epsilon)
         {
             float xShift = current * depth;
             float yShift = Mathf.Pow(current, roofCurve) * roofHeight;
 
-            current += ShingleStep(xShift, yShift, current, lengthOfShingle, depth);
+            if (!flip)
+            {
+                InstantiateCornerShingle(xShift, yShift, current, otherWidth, width, side, 1.0f);
+                InstantiateCornerShingle(xShift, yShift, current, otherWidth, width, side, -1.0f);
+            }
 
-            Vector2 tangent = new Vector2(1.0f, roofHeight * roofCurve * Mathf.Pow(current, roofCurve - 1.0f));
-            tangent.Normalize();
+            float startPosition = (current * otherWidth) - (width / 2.0f);
+            if (flip) { startPosition += transform.position.x; }
+            else { startPosition += transform.position.z; }
+
+            float distance = width - (2.0f * current * otherWidth);
+            int numShinglesWide = Mathf.RoundToInt(distance / 0.1f);
+            float widthOfShingle = distance / numShinglesWide;
+
+            Vector2 uhh = new Vector2(xShift, yShift);
+            Vector2 uhhhh = uhh - previous;
+
+            float step = ShingleStep(xShift, yShift, current, lengthOfShingle, depth);
+            current += step;
 
             for (int j = 0; j < numShinglesWide; j++)
             {
-                if (!snapped)
-                {
-                    float scaledWidth = 2.0f;
-                    if (!flip) scaledWidth /= ridgeLength;
-                    if (yShift > Mathf.Pow((j * widthOfShingle) / otherWidth, roofCurve) * roofHeight) continue;
-                    if (yShift > Mathf.Pow(scaledWidth - ((j * widthOfShingle) / otherWidth), roofCurve) * roofHeight) continue;
-                }
-                
-                Shingle newShingle = Instantiate(shingle);
+                Shingle newShingle3 = Instantiate(shingle);
 
                 if (flip)
                 {
-                    newShingle.transform.localPosition = new Vector3(
-                            transform.position.x + (width / 2.0f) - (j * widthOfShingle),
-                            transform.position.y + (transform.localScale.y / 2.0f) + yShift,
-                            transform.position.z + side * ((transform.localScale.z / 2.0f) - xShift)
-                        );
+                    if (j == 0) newShingle3.SwitchToRightCornerMesh();
+                    if (j == numShinglesWide - 1) newShingle3.SwitchToLeftCornerMesh();
                 }
                 else
                 {
-                    newShingle.transform.localPosition = new Vector3(
-                            transform.position.x + side * ((transform.localScale.x / 2.0f) - xShift),
-                            transform.position.y + (transform.localScale.y / 2.0f) + yShift,
-                            transform.position.z + (width / 2.0f) - (j * widthOfShingle)
-                        );
+                    if (j == 0) newShingle3.SwitchToLeftCornerMesh();
+                    if (j == numShinglesWide - 1) newShingle3.SwitchToRightCornerMesh();
                 }
 
-                float angle = (-1.0f * side * Vector2.Angle(Vector2.up, tangent)) - (side * 8.0f);
-                if (!flip) newShingle.transform.localRotation = Quaternion.Euler(angle, 90.0f, 0.0f);
-                if (flip) newShingle.transform.localRotation = Quaternion.Euler(angle, 0.0f, 0.0f);
-                newShingle.transform.localScale = new Vector3(widthOfShingle * 0.9f, 0.15f, 0.25f);
-                newShingle.transform.SetParent(storage.transform);
+                if (flip)
+                {
+                    newShingle3.transform.localPosition = new Vector3(
+                        (widthOfShingle / 2.0f) + startPosition + (j * widthOfShingle),
+                        transform.position.y + (transform.localScale.y / 2.0f) + yShift,
+                        transform.position.z + side * ((transform.localScale.z / 2.0f) - xShift)
+                    );
+                }
+                else
+                {
+                    newShingle3.transform.localPosition = new Vector3(
+                        transform.position.x + side * ((transform.localScale.x / 2.0f) - xShift),
+                        transform.position.y + (transform.localScale.y / 2.0f) + yShift,
+                        (widthOfShingle / 2.0f) + startPosition + (j * widthOfShingle)
+                    );
+                }
+
+                float angle = side * Vector2.SignedAngle(Vector2.up, uhhhh);
+                float yikes = side * 15.0f;
+                if (!flip) angle = -angle;
+                if (flip) yikes = -yikes;
+                if (!flip) newShingle3.transform.localRotation = Quaternion.Euler(0.0f, 90.0f, 0.0f);
+                Vector3 translateAmount = new Vector3(0.0f, -0.075f, 0.0f);
+                Vector3 axis = flip ? new Vector3(1.0f, 0.0f, 0.0f) : new Vector3(0.0f, 0.0f, 1.0f);
+
+                newShingle3.transform.Translate(translateAmount);
+                newShingle3.transform.RotateAround(newShingle3.transform.position - translateAmount, axis, angle);
+                newShingle3.transform.RotateAround(newShingle3.transform.position, axis, yikes);
+                newShingle3.transform.localScale = new Vector3(0.9f * widthOfShingle, 0.15f, 0.25f);
+                newShingle3.transform.SetParent(storage.transform);
             }
+
+            previous = uhh;
         }
     }
 
@@ -292,15 +337,15 @@ public class BuildingPart : MonoBehaviour
         if (ridgeLength > 0.2f)
         {
             amount *= ridgeLength;
-            PlaceShingles(transform.localScale.x, amount, transform.localScale.x / 2.0f, true, 1.0f, false);
-            PlaceShingles(transform.localScale.x, amount, transform.localScale.x / 2.0f, true, -1.0f, false);
-            PlaceShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, 1.0f, false);
-            PlaceShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, -1.0f, false);
+            PlaceCornerShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, 1.0f, true);
+            PlaceCornerShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, -1.0f, true);
+            PlaceCornerShingles(transform.localScale.x, amount, transform.localScale.x / 2.0f, true, 1.0f, false);
+            PlaceCornerShingles(transform.localScale.x, amount, transform.localScale.x / 2.0f, true, -1.0f, false);
         }
         else
         {
-            PlaceShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, 1.0f, true);
-            PlaceShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, -1.0f, true);
+            PlaceCornerShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, 1.0f, true);
+            PlaceCornerShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, -1.0f, true);
         }
     }
 

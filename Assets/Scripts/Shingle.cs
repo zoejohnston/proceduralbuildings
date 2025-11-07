@@ -6,6 +6,8 @@ using UnityEngine;
 public class Shingle : MonoBehaviour
 {
     private bool delete = false;
+    public Mesh rightCornerMesh;
+    public Mesh leftCornerMesh;
     // Start is called before the first frame update
     void Start()
     {
@@ -24,5 +26,17 @@ public class Shingle : MonoBehaviour
     public void DeletePls()
     {
         delete = true;
+    }
+
+    public void SwitchToLeftCornerMesh()
+    {
+        MeshFilter meshFilter = GetComponent<MeshFilter>();
+        meshFilter.mesh = leftCornerMesh;
+    }
+
+    public void SwitchToRightCornerMesh()
+    {
+        MeshFilter meshFilter = GetComponent<MeshFilter>();
+        meshFilter.mesh = rightCornerMesh;
     }
 }
