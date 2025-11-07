@@ -17,7 +17,7 @@ public class BuildingPart : MonoBehaviour
     [Range(0.1f, 2.0f)]
     public float roofHeight = 2.0f;
 
-    [Range(0.0f, 1.0f)]
+    [Range(0.2f, 1.0f)]
     public float ridgeLength = 0.5f;
 
     //private float defaultBrickHeight = 0.25f;
@@ -45,9 +45,9 @@ public class BuildingPart : MonoBehaviour
             Quoin new_quoin = Instantiate(quoin);
 
             new_quoin.transform.localPosition = new Vector3(
-                transform.position.x + x * ((transform.localScale.x / 2.0f) - (widthOfBrick / 2.0f) + 0.15f),
+                transform.position.x + x * ((transform.localScale.x / 2.0f) - (widthOfBrick / 2.0f) + 0.05f),
                 (transform.position.y - (transform.localScale.y / 2.0f)) + (heightOfBrick / 2.0f) + (heightOfBrick * i) - (epsilon / 2.0f),
-                transform.position.z + z * ((transform.localScale.z / 2.0f) - (lenthOfBrick / 2.0f) + 0.15f)
+                transform.position.z + z * ((transform.localScale.z / 2.0f) - (lenthOfBrick / 2.0f) + 0.05f)
             );
 
             new_quoin.transform.RotateAround(transform.position, Vector3.up, transform.localEulerAngles.y);
@@ -102,17 +102,17 @@ public class BuildingPart : MonoBehaviour
                 if (swap)
                 {
                     newBrick.transform.localPosition = new Vector3(
-                        transform.position.x - direction * ((transform.localScale.x / 2.0f) + 0.05f),
+                        transform.position.x - direction * ((transform.localScale.x / 2.0f) - 0.05f),
                         (transform.position.y - (transform.localScale.y / 2.0f)) + (heightOfBrick / 2.0f) + (heightOfBrick * i),
-                        (transform.position.z + (transform.localScale.z / 2.0f)) - upTo - (newWidth / 2.0f)
+                        (transform.position.z + (transform.localScale.z / 2.0f) - 0.1f) - upTo - (newWidth / 2.0f)
                     );
                 }
                 else
                 {
                     newBrick.transform.localPosition = new Vector3(
-                        (transform.position.x + (transform.localScale.x / 2.0f)) - upTo - (newWidth / 2.0f),
+                        (transform.position.x + (transform.localScale.x / 2.0f) - 0.1f) - upTo - (newWidth / 2.0f),
                         (transform.position.y - (transform.localScale.y / 2.0f)) + (heightOfBrick / 2.0f) + (heightOfBrick * i),
-                        transform.position.z + direction * ((transform.localScale.z / 2.0f) + 0.05f)
+                        transform.position.z + direction * ((transform.localScale.z / 2.0f) - 0.05f)
                     );
                 }
                 
@@ -152,8 +152,9 @@ public class BuildingPart : MonoBehaviour
         int numBricksTall = Mathf.RoundToInt(height / 0.25f);
         float heightOfBrick = height / numBricksTall;
 
-        int numBricksWide = Mathf.RoundToInt(transform.localScale.x / 0.3f);
-        float widthOfBrick = transform.localScale.x / numBricksWide;
+        float width = transform.localScale.x - 0.2f;
+        int numBricksWide = Mathf.RoundToInt(width / 0.3f);
+        float widthOfBrick = width / numBricksWide;
 
         float[,] noise = new float[numBricksTall, numBricksWide];
         SetNoise(noise, numBricksTall, numBricksWide);
@@ -161,8 +162,9 @@ public class BuildingPart : MonoBehaviour
         BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 90.0f);
         BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 270.0f);
         
-        numBricksWide = Mathf.RoundToInt(transform.localScale.z / 0.3f);
-        widthOfBrick = transform.localScale.z / numBricksWide;
+        width = transform.localScale.z - 0.2f;
+        numBricksWide = Mathf.RoundToInt(width / 0.3f);
+        widthOfBrick = width / numBricksWide;
 
         noise = new float[numBricksTall, numBricksWide];
         SetNoise(noise, numBricksTall, numBricksWide);
@@ -207,7 +209,7 @@ public class BuildingPart : MonoBehaviour
         return arcLength;
     }
     
-    void PlaceShingles(float width, float depth, float otherWidth, bool flip)
+    void PlaceShingles(float width, float depth, float otherWidth, bool flip, float side, bool snapped)
     {
         int numShinglesWide = Mathf.RoundToInt(width / 0.1f);
         float widthOfShingle = width / numShinglesWide;
@@ -223,30 +225,42 @@ public class BuildingPart : MonoBehaviour
             float xShift = current * depth;
             float yShift = Mathf.Pow(current, roofCurve) * roofHeight;
 
+            Vector2 tangent = new Vector2(1.0f, roofCurve * Mathf.Pow(current, roofCurve - 1.0f));
+            tangent.Normalize();
+
             for (int j = 0; j < numShinglesWide; j++)
             {
-                if (yShift > Mathf.Pow((j * widthOfShingle) / otherWidth, roofCurve) * roofHeight) continue;
+                if (!snapped)
+                {
+                    float scaledWidth = 2.0f;
+                    if (!flip) scaledWidth /= ridgeLength;
+                    if (yShift > Mathf.Pow((j * widthOfShingle) / otherWidth, roofCurve) * roofHeight) continue;
+                    if (yShift > Mathf.Pow(scaledWidth - ((j * widthOfShingle) / otherWidth), roofCurve) * roofHeight) continue;
+                }
                 
                 Shingle newShingle = Instantiate(shingle);
 
                 if (flip)
                 {
                     newShingle.transform.localPosition = new Vector3(
-                            transform.position.x + (transform.localScale.x / 2.0f) - (j * widthOfShingle),
+                            transform.position.x + (width / 2.0f) - (j * widthOfShingle),
                             transform.position.y + (transform.localScale.y / 2.0f) + yShift,
-                            transform.position.z + (transform.localScale.z / 2.0f) - xShift
+                            transform.position.z + side * ((transform.localScale.z / 2.0f) - xShift)
                         );
                 }
                 else
                 {
                     newShingle.transform.localPosition = new Vector3(
-                            transform.position.x + (transform.localScale.x / 2.0f) - xShift,
+                            transform.position.x + side * ((transform.localScale.x / 2.0f) - xShift),
                             transform.position.y + (transform.localScale.y / 2.0f) + yShift,
-                            transform.position.z + (transform.localScale.z / 2.0f) - (j * widthOfShingle)
+                            transform.position.z + (width / 2.0f) - (j * widthOfShingle)
                         );
                 }
 
-                newShingle.transform.localScale = new Vector3(0.1f, 0.1f, widthOfShingle);
+                float angle = (-1.0f * side * Vector2.Angle(Vector2.up, tangent)) - (side * 8.0f);
+                if (!flip) newShingle.transform.localRotation = Quaternion.Euler(angle, 90.0f, 0.0f);
+                if (flip) newShingle.transform.localRotation = Quaternion.Euler(angle, 0.0f, 0.0f);
+                newShingle.transform.localScale = new Vector3(0.09f, 0.15f, widthOfShingle);
                 newShingle.transform.SetParent(storage.transform);
             }
 
@@ -267,56 +281,21 @@ public class BuildingPart : MonoBehaviour
 
     void InitRoof()
     {
-        float amount = ridgeLength * (transform.localScale.z / 2.0f);
+        float amount = transform.localScale.z / 2.0f;
 
-        int numShinglesWide = Mathf.RoundToInt(transform.localScale.z / 0.1f);
-        float widthOfShingle = transform.localScale.z / numShinglesWide;
-
-        float arcLength = EstimateArcLength(transform.localScale.x / 2.0f);
-        int numShinglesTall = Mathf.RoundToInt(arcLength / 0.1f);
-        float lengthOfShingle = arcLength / numShinglesTall;
-
-        float current = Mathf.Epsilon;
-
-        while (current < 1.0f)
+        if (ridgeLength > 0.2f)
         {
-            float xShift = current * (transform.localScale.x / 2.0f);
-            float yShift = Mathf.Pow(current, roofCurve) * roofHeight;
-
-            for (int j = 0; j < numShinglesWide; j++)
-            {
-                if (yShift > Mathf.Pow((j * widthOfShingle) / amount, roofCurve) * roofHeight) continue;
-
-                Shingle newShingle = Instantiate(shingle);
-
-                newShingle.transform.localPosition = new Vector3(
-                        transform.position.x + (transform.localScale.x / 2.0f) - xShift,
-                        transform.position.y + (transform.localScale.y / 2.0f) + yShift,
-                        transform.position.z + (transform.localScale.z / 2.0f) - (j * widthOfShingle)
-                    );
-
-                newShingle.transform.localScale = new Vector3(0.1f, 0.1f, widthOfShingle);
-                newShingle.transform.SetParent(storage.transform);
-            }
-
-            //Vector2 tangent = new Vector2(1.0f, roofCurve * Mathf.Pow(current, roofCurve - 1.0f));
-            //tangent.Normalize();
-
-            float step = 0.0f;
-            Vector2 currentPoint = new Vector2(xShift, yShift);
-            Vector2 nextPoint = new Vector2((current + step) * (transform.localScale.x / 2.0f), Mathf.Pow(current + step, roofCurve) * roofHeight);
-
-            while (Vector2.Distance(currentPoint, nextPoint) < lengthOfShingle)
-            {
-                step += 0.001f;
-                nextPoint.x = (current + step) * (transform.localScale.x / 2.0f);
-                nextPoint.y = Mathf.Pow(current + step, roofCurve) * roofHeight;
-            }
-
-            current += step;
+            amount *= ridgeLength;
+            PlaceShingles(transform.localScale.x, amount, transform.localScale.x / 2.0f, true, 1.0f, false);
+            PlaceShingles(transform.localScale.x, amount, transform.localScale.x / 2.0f, true, -1.0f, false);
+            PlaceShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, 1.0f, false);
+            PlaceShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, -1.0f, false);
         }
-
-        PlaceShingles(transform.localScale.x, amount, transform.localScale.x / 2.0f, true);
+        else
+        {
+            PlaceShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, 1.0f, true);
+            PlaceShingles(transform.localScale.z, transform.localScale.x / 2.0f, amount, false, -1.0f, true);
+        }
     }
 
     // Start is called before the first frame update
