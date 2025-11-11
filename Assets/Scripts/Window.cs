@@ -33,7 +33,7 @@ public class Window : MonoBehaviour
             Vector3 startPosition = transform.position + transform.TransformDirection(up);
             Vector3 endPosition = snappedTo.GetDormerAttachPoint(startPosition + (0.15f * Vector3.up), backwards);
 
-            Debug.DrawLine(startPosition, endPosition, Color.red);
+            //Debug.DrawLine(startPosition, endPosition, Color.red);
 
             Vector3 localStartPosition = transform.InverseTransformPoint(startPosition);
             Vector3 localEndPosition = transform.InverseTransformPoint(endPosition);
