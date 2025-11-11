@@ -26,6 +26,7 @@ public class Shingle : MonoBehaviour
     public void DeletePls()
     {
         delete = true;
+        gameObject.GetComponent<MeshRenderer>().enabled = false;
     }
 
     public void SwitchToLeftCornerMesh()
@@ -38,5 +39,21 @@ public class Shingle : MonoBehaviour
     {
         MeshFilter meshFilter = GetComponent<MeshFilter>();
         meshFilter.mesh = rightCornerMesh;
+    }
+
+    public void ResizeLeft(float p)
+    {
+        float multiplier = Mathf.Abs(p + 0.5f);
+        Vector3 new_point = transform.TransformPoint(new Vector3((p / 2.0f) - 0.25f, 0.0f, 0.0f));
+        transform.Translate(new_point - transform.position, Space.World);
+        transform.localScale = new Vector3(multiplier * transform.localScale.x, transform.localScale.y, transform.localScale.z);
+    }
+
+    public void ResizeRight(float p)
+    {
+        float multiplier = Mathf.Abs(0.5f - p);
+        Vector3 new_point = transform.TransformPoint(new Vector3((p / 2.0f) + 0.25f, 0.0f, 0.0f));
+        transform.Translate(new_point - transform.position, Space.World);
+        transform.localScale = new Vector3(multiplier * transform.localScale.x, transform.localScale.y, transform.localScale.z);
     }
 }

@@ -14,24 +14,28 @@ public class WindowCollider : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-       if (transform.hasChanged)
+       /*if (transform.hasChanged)
         {
             Physics.simulationMode = SimulationMode.Script;
             Physics.Simulate(Time.fixedDeltaTime);
             Physics.simulationMode = SimulationMode.FixedUpdate;
 
             transform.hasChanged = false;
-        }
+        }*/
     }
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.GetComponent<BuildingPart>())
+        if (other.transform.parent.gameObject.GetComponent<BuildingPart>())
         {
+            BuildingPart snappedTo = other.transform.parent.gameObject.GetComponent<BuildingPart>();
+            Window window = transform.parent.gameObject.GetComponent<Window>();
+            window.SetSnap(snappedTo);
+            
             Debug.Log("lock to wall...");
-            Debug.Log(other.gameObject.transform.position);
-            Debug.Log(other.gameObject.transform.localRotation);
-            Debug.Log(other.gameObject.transform.localScale);
+            Debug.Log(snappedTo.transform.position);
+            Debug.Log(snappedTo.transform.localRotation);
+            Debug.Log(snappedTo.transform.localScale);
         }
     }
 }

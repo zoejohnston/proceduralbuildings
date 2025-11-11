@@ -13,8 +13,8 @@ public class Brick : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        MeshFilter meshFilter = GetComponent<MeshFilter>();
-        mesh = meshFilter.sharedMesh;
+        //MeshFilter meshFilter = GetComponent<MeshFilter>();
+        //mesh = meshFilter.sharedMesh;
     }
 
     // Update is called once per frame
@@ -30,6 +30,7 @@ public class Brick : MonoBehaviour
     public void DeletePls()
     {
         delete = true;
+        gameObject.transform.GetChild(1).gameObject.GetComponent<MeshRenderer>().enabled = false;
     }
     
     public void EnableCollisions()
@@ -77,16 +78,12 @@ public class Brick : MonoBehaviour
     {
         GameObject newBrickObject = Instantiate(gameObject);
         Brick newBrick = newBrickObject.GetComponent<Brick>();
-        newBrickObject.transform.SetParent(transform.parent);
         newBrick.ResizeBottom(p);
         newBrick.EnableCollisions();
+        newBrickObject.transform.SetParent(transform.parent);
+        newBrick.transform.SetParent(transform.parent);
 
         ResizeTop(p);
-    }
-
-    private bool CloseEnough(Vector3 p1, Vector3 p2)
-    {
-        return Vector3.Distance(p1, p2) < 0.01f;
     }
 
     public void OnTriggerEnter(Collider other)
@@ -94,122 +91,6 @@ public class Brick : MonoBehaviour
         if ((!checkCollisions) || !other.gameObject.transform.parent)// || other.gameObject.transform.parent != transform.parent)
         {
             return;
-        }
-
-        if (other.gameObject.transform.parent.gameObject.GetComponent<Quoin>() ||
-            other.gameObject.transform.parent.gameObject.GetComponent<Window>())
-        {
-            Vector3 topLeft = transform.TransformPoint(new Vector3(0.0f, 0.5f, 0.5f));
-            Vector3 topRight = transform.TransformPoint(new Vector3(0.0f, 0.5f, -0.5f));
-            Vector3 bottomLeft = transform.TransformPoint(new Vector3(0.0f, -0.5f, 0.5f));
-            Vector3 bottomRight = transform.TransformPoint(new Vector3(0.0f, -0.5f, -0.5f));
-
-            bool topLeftCollision = CloseEnough(other.ClosestPoint(topLeft), topLeft);
-            bool topRightCollision = CloseEnough(other.ClosestPoint(topRight), topRight);
-            bool bottomLeftCollision = CloseEnough(other.ClosestPoint(bottomLeft), bottomLeft);
-            bool bottomRightCollision = CloseEnough(other.ClosestPoint(bottomRight), bottomRight);
-
-            bool[] cornerChecks = new bool[] { topLeftCollision, topRightCollision, bottomLeftCollision, bottomRightCollision };
-            int cornerChecksFailed = cornerChecks.Count(b => b);
-
-            if (cornerChecksFailed == 4)
-            {
-                delete = true;
-            }
-            else if (cornerChecksFailed > 1)
-            {
-                if (topLeftCollision && bottomLeftCollision)
-                {
-                    Vector3 rightPoint = new Vector3(0.0f, 0.0f, -0.5f);
-                    Vector3 otherPoint = transform.InverseTransformPoint(other.ClosestPoint(transform.TransformPoint(rightPoint)));
-
-                    ResizeLeft(otherPoint.z);
-                }
-                if (topRightCollision && bottomRightCollision)
-                {
-                    Vector3 leftPoint = new Vector3(0.0f, 0.0f, 0.5f);
-                    Vector3 otherPoint = transform.InverseTransformPoint(other.ClosestPoint(transform.TransformPoint(leftPoint)));
-
-                    ResizeRight(otherPoint.z);
-                }
-                if (topLeftCollision && topRightCollision)
-                {
-                    Vector3 bottomPoint = new Vector3(0.0f, -0.5f, 0.0f);
-                    Vector3 otherPoint = transform.InverseTransformPoint(other.ClosestPoint(transform.TransformPoint(bottomPoint)));
-
-                    ResizeTop(otherPoint.y);
-                }
-                if (bottomLeftCollision && bottomRightCollision)
-                {
-                    Vector3 topPoint = new Vector3(0.0f, 0.5f, 0.0f);
-                    Vector3 otherPoint = transform.InverseTransformPoint(other.ClosestPoint(transform.TransformPoint(topPoint)));
-
-                    ResizeBottom(otherPoint.y);
-                }
-            }
-            else if (cornerChecksFailed == 1)
-            {
-                if (topLeftCollision)
-                {
-                    Vector3 bottomRightPoint = new Vector3(0.0f, -0.5f, -0.5f);
-                    Vector3 otherPoint = transform.InverseTransformPoint(other.ClosestPoint(transform.TransformPoint(bottomRightPoint)));
-
-                    checkCollisions = false;
-                    GameObject newBrickObject = Instantiate(gameObject);
-                    Brick newBrick = newBrickObject.GetComponent<Brick>();
-                    newBrickObject.transform.SetParent(transform.parent);
-                    newBrick.ResizeBottom(otherPoint.y);
-                    newBrick.ResizeLeft(otherPoint.z);
-                    checkCollisions = true;
-
-                    ResizeTop(otherPoint.y);
-                }
-                else if (topRightCollision)
-                {
-                    Vector3 bottomLeftPoint = new Vector3(0.0f, -0.5f, 0.5f);
-                    Vector3 otherPoint = transform.InverseTransformPoint(other.ClosestPoint(transform.TransformPoint(bottomLeftPoint)));
-
-                    checkCollisions = false;
-                    GameObject newBrickObject = Instantiate(gameObject);
-                    Brick newBrick = newBrickObject.GetComponent<Brick>();
-                    newBrickObject.transform.SetParent(transform.parent);
-                    newBrick.ResizeBottom(otherPoint.y);
-                    newBrick.ResizeRight(otherPoint.z);
-                    checkCollisions = true;
-
-                    ResizeTop(otherPoint.y);
-                }
-                else if (bottomLeftCollision)
-                {
-                    Vector3 topRightPoint = new Vector3(0.0f, 0.5f, -0.5f);
-                    Vector3 otherPoint = transform.InverseTransformPoint(other.ClosestPoint(transform.TransformPoint(topRightPoint)));
-
-                    checkCollisions = false;
-                    GameObject newBrickObject = Instantiate(gameObject);
-                    Brick newBrick = newBrickObject.GetComponent<Brick>();
-                    newBrickObject.transform.SetParent(transform.parent);
-                    newBrick.ResizeTop(otherPoint.y);
-                    newBrick.ResizeLeft(otherPoint.z);
-                    checkCollisions = true;
-
-                    ResizeBottom(otherPoint.y);
-                }
-                else if (bottomRightCollision)
-                {
-                    Vector3 topLeftPoint = new Vector3(0.0f, 0.5f, 0.5f);
-                    Vector3 otherPoint = transform.InverseTransformPoint(other.ClosestPoint(transform.TransformPoint(topLeftPoint)));
-
-                    checkCollisions = false;
-                    GameObject newBrickObject = Instantiate(gameObject);
-                    Brick newBrick = newBrickObject.GetComponent<Brick>();
-                    newBrickObject.transform.SetParent(transform.parent);
-                    newBrick.ResizeTop(otherPoint.y + 0.025f);
-                    newBrick.ResizeRight(otherPoint.z);
-                    checkCollisions = true;
-
-                    ResizeBottom(otherPoint.y + 0.025f);
-                }
-            }
         }
     }
 }

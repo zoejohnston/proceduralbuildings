@@ -20,6 +20,9 @@ public class BuildingPart : MonoBehaviour
     [Range(0.2f, 1.0f)]
     public float ridgeLength = 0.5f;
 
+    private float shingleSize = 0.1f;
+    private bool updatedLastFrame = false;
+
     //private float defaultBrickHeight = 0.25f;
     //private float defaultBrickLength = 0.0125f;
     //private float defaultQuoinHeight = 0.25f;
@@ -30,11 +33,11 @@ public class BuildingPart : MonoBehaviour
         float epsilon = 0.000001f;
         y += epsilon;
 
-        int numBricksTall = Mathf.RoundToInt(y / 0.5f);
+        int numBricksTall = Mathf.RoundToInt(y / 0.2f);
         float heightOfBrick = y / numBricksTall;
 
-        float widthOfBrick = 0.4f;
-        float lenthOfBrick = 0.7f;
+        float widthOfBrick = 0.15f;
+        float lenthOfBrick = 0.25f;
 
         for (int i = 0; i < numBricksTall; i++)
         {
@@ -62,16 +65,7 @@ public class BuildingPart : MonoBehaviour
         for (int i = 0; i < numBricksTall; i++)
         {
             float sum = 0.0f;
-
             noise[i, 0] = Mathf.PerlinNoise(i / 0.7f, 0 / 0.7f) - 0.5f;
-            if (i % 2 == 0)
-            {
-                noise[i, 0] += 0.2f;
-            }
-            else
-            {
-                noise[i, 0] -= 0.2f;
-            }
             sum += noise[i, 0];
 
             for (int j = 1; j < numBricksWide - 1; j++)
@@ -97,12 +91,13 @@ public class BuildingPart : MonoBehaviour
             for (int j = 0; j < numBricksWide; j ++)
             {
                 Brick newBrick = Instantiate(brick);
-                float newWidth = Mathf.Abs(widthOfBrick + 0.4f * noise[i, j]);
+                float newWidth = Mathf.Abs(widthOfBrick + 0.1f * noise[i, j]);
+                float zNoise = 0.025f * (Mathf.PerlinNoise(i / 0.8f, j / 0.8f) - 0.5f);
 
                 if (swap)
                 {
                     newBrick.transform.localPosition = new Vector3(
-                        transform.position.x - direction * ((transform.localScale.x / 2.0f) - (shrink / 2.0f)),
+                        transform.position.x - direction * ((transform.localScale.x / 2.0f) - (0.25f / 2.0f)) + zNoise,
                         (transform.position.y - (transform.localScale.y / 2.0f)) + (heightOfBrick / 2.0f) + (heightOfBrick * i),
                         (transform.position.z + (transform.localScale.z / 2.0f) - shrink) - upTo - (newWidth / 2.0f)
                     );
@@ -112,11 +107,25 @@ public class BuildingPart : MonoBehaviour
                     newBrick.transform.localPosition = new Vector3(
                         (transform.position.x + (transform.localScale.x / 2.0f) - shrink) - upTo - (newWidth / 2.0f),
                         (transform.position.y - (transform.localScale.y / 2.0f)) + (heightOfBrick / 2.0f) + (heightOfBrick * i),
-                        transform.position.z + direction * ((transform.localScale.z / 2.0f) - (shrink / 2.0f))
+                        transform.position.z + direction * ((transform.localScale.z / 2.0f) - (0.25f / 2.0f)) + zNoise
                     );
                 }
                 
                 newBrick.name = "Brick[" + i + "," + j + "]" + rotation;
+
+                float rotationalNoise = Mathf.PerlinNoise(i / 0.87f, j / 0.87f);
+                if (rotationalNoise > 0.75f)
+                {
+                    newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 90.0f);
+                } 
+                else if (rotationalNoise > 0.5f)
+                {
+                    newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 180.0f);
+                } 
+                else if (rotationalNoise > 0.25f)
+                {
+                    newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 270.0f);
+                }
 
                 newBrick.transform.localEulerAngles = new Vector3(0.0f, rotation, 0.0f);
                 newBrick.transform.RotateAround(transform.position, Vector3.up, transform.localEulerAngles.y);
@@ -125,7 +134,7 @@ public class BuildingPart : MonoBehaviour
 
                 float splitNoise = Mathf.PerlinNoise(i / 0.8f, j / 0.8f);
                 float splitLocation = 0.7f * (Mathf.PerlinNoise(i / 0.3f, j / 0.3f) - 0.5f);
-                if (splitNoise > 0.65f) newBrick.Split(splitLocation);/**/
+                /*if (splitNoise > 0.65f) newBrick.Split(splitLocation);*/
 
                 /*if (i != 0 && i != numBricksTall - 1)
                 {
@@ -142,7 +151,7 @@ public class BuildingPart : MonoBehaviour
 
     void InitBricks()
     {
-        float shrink = 0.6f;
+        float shrink = 0.2f;
         float height = transform.localScale.y;
         InitQuoins(1.0f, height, 1.0f);
         InitQuoins(1.0f, height, -1.0f);
@@ -150,11 +159,11 @@ public class BuildingPart : MonoBehaviour
         InitQuoins(-1.0f, height, -1.0f);
 
         // Rest of bricks
-        int numBricksTall = Mathf.RoundToInt(height / 0.25f);
+        int numBricksTall = Mathf.RoundToInt(height / 0.1f);
         float heightOfBrick = height / numBricksTall;
 
         float width = transform.localScale.x - shrink;
-        int numBricksWide = Mathf.RoundToInt(width / 0.3f);
+        int numBricksWide = Mathf.RoundToInt(width / 0.15f);
         float widthOfBrick = width / numBricksWide;
 
         float[,] noise = new float[numBricksTall, numBricksWide];
@@ -164,7 +173,7 @@ public class BuildingPart : MonoBehaviour
         BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 270.0f, shrink / 2.0f);
         
         width = transform.localScale.z - shrink;
-        numBricksWide = Mathf.RoundToInt(width / 0.3f);
+        numBricksWide = Mathf.RoundToInt(width / 0.15f);
         widthOfBrick = width / numBricksWide;
 
         noise = new float[numBricksTall, numBricksWide];
@@ -188,9 +197,9 @@ public class BuildingPart : MonoBehaviour
         InitBricks();
         InitRoof();
 
-        Physics.simulationMode = SimulationMode.Script;
+        /*Physics.simulationMode = SimulationMode.Script;
         Physics.Simulate(Time.fixedDeltaTime);
-        Physics.simulationMode = SimulationMode.FixedUpdate;
+        Physics.simulationMode = SimulationMode.FixedUpdate;*/
     }
 
     private float EstimateArcLength(float xDist)
@@ -279,7 +288,8 @@ public class BuildingPart : MonoBehaviour
         }
     }
 
-    void InstantiateShingle(int index, float widthOfShingle, int numShinglesWide, float xShift, float yShift, float startPosition, float side, float angle, float tilt, bool flip)
+    void InstantiateShingle(int index, float widthOfShingle, float lengthOfShingle, int numShinglesWide, float xShift, float yShift, float startPosition,
+        float side, float angle, float tilt, bool flip)
     {
         Shingle newShingle = Instantiate(shingle);
 
@@ -319,14 +329,19 @@ public class BuildingPart : MonoBehaviour
         newShingle.transform.RotateAround(newShingle.transform.position - translateAmount, axis, angle);
         newShingle.transform.RotateAround(newShingle.transform.position, axis, tilt);
         newShingle.transform.RotateAround(transform.position, Vector3.up, transform.localEulerAngles.y);
-        newShingle.transform.localScale = new Vector3(0.9f * widthOfShingle, 0.15f, 0.25f);
+        newShingle.transform.localScale = new Vector3(widthOfShingle, 1.5f * lengthOfShingle, 0.25f);
+
+        float zNoise = 0.025f * (Mathf.PerlinNoise(xShift / 0.7f, index / 0.8f) - 0.5f);
+        float yNoise = -0.05f * (Mathf.PerlinNoise(xShift / 0.3f, index / 0.97f) - 0.5f);
+        newShingle.transform.Translate(new Vector3(0.0f, yNoise, zNoise));
+
         newShingle.transform.SetParent(storage.transform);
     }
     
     void PlaceShingles(float width, float depth, float otherWidth, bool flip, float side)
     {
         float arcLength = EstimateArcLength(depth);
-        int numShinglesTall = Mathf.RoundToInt(arcLength / 0.1f);
+        int numShinglesTall = Mathf.RoundToInt(arcLength / shingleSize);
         float lengthOfShingle = arcLength / numShinglesTall;
 
         float current = Mathf.Epsilon;
@@ -361,7 +376,7 @@ public class BuildingPart : MonoBehaviour
             }
 
             float distance = width - (2.0f * (current - step) * otherWidth);
-            int numShinglesWide = Mathf.RoundToInt(distance / 0.1f);
+            int numShinglesWide = Mathf.RoundToInt(distance / shingleSize);
             float widthOfShingle = distance / numShinglesWide;
 
             float startPosition = ((current - step) * otherWidth) - (width / 2.0f);
@@ -378,17 +393,17 @@ public class BuildingPart : MonoBehaviour
 
             for (int j = 0; j < numShinglesWide; j++)
             {
-                InstantiateShingle(j, widthOfShingle, numShinglesWide, xShift, yShift, startPosition, side, angle, tilt, flip);
+                InstantiateShingle(j, widthOfShingle, lengthOfShingle, numShinglesWide, xShift, yShift, startPosition, side, angle, tilt, flip);
             }
 
             previous = uhh;
         }
     }
-    
+
     void PlaceShinglesSimple(float width, float depth, bool flip, float side)
     {
         float arcLength = EstimateArcLength(depth);
-        int numShinglesTall = Mathf.RoundToInt(arcLength / 0.1f);
+        int numShinglesTall = Mathf.RoundToInt(arcLength / shingleSize);
         float lengthOfShingle = arcLength / numShinglesTall;
 
         float current = Mathf.Epsilon;
@@ -406,7 +421,7 @@ public class BuildingPart : MonoBehaviour
             yShift = Mathf.Pow(current, roofCurve) * roofHeight;
 
             float distance = width;
-            int numShinglesWide = Mathf.RoundToInt(distance / 0.1f);
+            int numShinglesWide = Mathf.RoundToInt(distance / shingleSize);
             float widthOfShingle = distance / numShinglesWide;
 
             float startPosition = -width / 2.0f;
@@ -423,10 +438,119 @@ public class BuildingPart : MonoBehaviour
 
             for (int j = 1; j < numShinglesWide - 1; j++)
             {
-                InstantiateShingle(j, widthOfShingle, numShinglesWide, xShift, yShift, startPosition, side, angle, tilt, flip);
+                InstantiateShingle(j, widthOfShingle, lengthOfShingle, numShinglesWide, xShift, yShift, startPosition, side, angle, tilt, flip);
             }
 
             previous = uhh;
+        }
+    }
+
+    public Vector3 GetDormerAttachPoint(Vector3 startPosition, Vector3 direction) {
+        float topOfWall = transform.position.y + (transform.localScale.y / 2.0f);
+        float yShift = (startPosition.y - topOfWall) / roofHeight;
+        if (yShift < 0.0f) yShift = 0.0f;
+        float xShift = Mathf.Pow(yShift / roofHeight, 1.0f / roofCurve);
+
+        Vector3 localDirection = transform.InverseTransformDirection(direction);
+        Vector3 worldPointOnPlane = transform.TransformPoint(-0.5f * localDirection);
+
+        Vector3 test = new Vector3(
+            transform.localScale.x * direction.x, 
+            transform.localScale.y * direction.y, 
+            transform.localScale.z * direction.z
+        );
+
+        Plane plane = new Plane(direction, worldPointOnPlane);
+        float multiplier = 0.5f * xShift;
+        if (localDirection.z > 0.1f) multiplier *= ridgeLength;
+        Vector3 point = plane.ClosestPointOnPlane(startPosition) + multiplier * test;
+
+        return point;
+    }
+
+    void MoreQuoins(float x, float y, float z)
+    {
+        Quoin new_quoin = Instantiate(quoin);
+
+        new_quoin.transform.localPosition = new Vector3(
+            transform.position.x + x * ((transform.localScale.x / 2.0f) - (0.15f / 2.0f) - 0.05f),
+            transform.position.y + (transform.localScale.y / 2.0f) + (0.175f / 2.0f),
+            transform.position.z + z * ((transform.localScale.z / 2.0f) - (0.15f / 2.0f) - 0.05f)
+        );
+
+            new_quoin.transform.RotateAround(transform.position, Vector3.up, transform.localEulerAngles.y);
+            new_quoin.transform.localScale = new Vector3(0.15f, 0.175f, 0.15f);
+            new_quoin.transform.SetParent(storage.transform);
+    }
+    
+    void MoreBricks(float width, float side)
+    {
+        int numBricksTall = Mathf.RoundToInt(roofHeight / 0.1f);
+        float heightOfBrick = roofHeight / numBricksTall;
+        numBricksTall += 1;
+
+        for (int i = 0; i < numBricksTall; i++)
+        {
+            float yShift = (heightOfBrick / 2.0f) + (heightOfBrick * (i - 1));
+            if (yShift < 0.0f) yShift = 0.0f;
+            float xShift = Mathf.Pow(yShift / roofHeight, 1.0f / roofCurve);
+
+            float distance = (width * (1.0f - xShift));
+
+            if (i == 0) {
+                distance = width - 0.2f;
+                yShift = (heightOfBrick / -2.0f);
+            }
+
+            if (distance > width - 0.2f) distance = width - 0.2f;
+            int numBricksWide = Mathf.RoundToInt(distance / 0.15f);
+            float widthOfBrick = distance / numBricksWide;
+
+            if (numBricksWide == 0) {
+                numBricksWide = 1;
+                widthOfBrick = 0.1f;
+                distance = 0.1f;
+            }
+
+            float[,] noise = new float[1, numBricksWide];
+            SetNoise(noise, 1, numBricksWide);
+
+            float startPosition = distance / 2.0f;
+            startPosition += transform.position.x;
+
+            float upTo = 0.0f;
+
+            for (int j = 0; j < numBricksWide; j++)
+            {
+                Brick newBrick = Instantiate(brick);
+                float newWidth = numBricksWide == 1 ? widthOfBrick : Mathf.Abs(widthOfBrick + 0.1f * noise[0, j]);
+                float zNoise = 0.025f * (Mathf.PerlinNoise(i / 0.8f, j / 0.8f) - 0.5f);
+
+                newBrick.transform.localPosition = new Vector3(
+                    startPosition - upTo - (newWidth / 2.0f),
+                    transform.position.y + (transform.localScale.y / 2.0f) + yShift + heightOfBrick,
+                    transform.position.z + side * ((transform.localScale.z / 2.0f) - 0.125f) + zNoise
+                );
+
+                float rotationalNoise = Mathf.PerlinNoise(i / 0.87f, j / 0.87f);
+                if (rotationalNoise > 0.75f)
+                {
+                    newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 90.0f);
+                } 
+                else if (rotationalNoise > 0.5f)
+                {
+                    newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 180.0f);
+                } 
+                else if (rotationalNoise > 0.25f)
+                {
+                    newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 270.0f);
+                }
+
+                newBrick.transform.localScale = new Vector3(newWidth, heightOfBrick, 0.1f);
+                newBrick.transform.SetParent(storage.transform);
+
+                upTo += newWidth;
+            }
         }
     }
 
@@ -447,7 +571,13 @@ public class BuildingPart : MonoBehaviour
         {
             PlaceShinglesSimple(transform.localScale.z, transform.localScale.x / 2.0f, false, 1.0f);
             PlaceShinglesSimple(transform.localScale.z, transform.localScale.x / 2.0f, false, -1.0f);
-            PlaceTopRidgeShingles(0.1f);
+            MoreBricks(transform.localScale.x, 1.0f);
+            MoreBricks(transform.localScale.x, -1.0f);
+            MoreQuoins(1.0f, transform.localScale.y, 1.0f);
+            MoreQuoins(1.0f, transform.localScale.y, -1.0f);
+            MoreQuoins(-1.0f, transform.localScale.y, 1.0f);
+            MoreQuoins(-1.0f, transform.localScale.y, -1.0f);
+            PlaceTopRidgeShingles(0.2f);
         }
     }
 
@@ -461,8 +591,7 @@ public class BuildingPart : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (transform.hasChanged)
-        {
+        if (transform.hasChanged) {
             if (transform.localScale.x < 1.5f)
                 transform.localScale = new Vector3(1.5f, transform.localScale.y, transform.localScale.z);
             if (transform.localScale.y < 0.5f)
@@ -471,11 +600,21 @@ public class BuildingPart : MonoBehaviour
                 transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, 1.5f);
 
             transform.hasChanged = false;
+            updatedLastFrame = true;
+            UpdateBricks();
+
+        } else if (updatedLastFrame) {
+            Debug.Log("step");
+            Physics.simulationMode = SimulationMode.Script;
+            Physics.Simulate(Time.fixedDeltaTime);
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+
+            updatedLastFrame = false;
         }
 
         if (Selection.Contains(gameObject))
         {
-            UpdateBricks();
+            //UpdateBricks();
         }
     }
 }
