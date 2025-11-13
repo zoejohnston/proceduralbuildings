@@ -26,16 +26,23 @@ public class WindowCollider : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        if (other.gameObject.GetComponent<WallCollider>())
+        {
+            Debug.Log(other.gameObject.name);
+            Window window = transform.parent.gameObject.GetComponent<Window>();
+            window.wall = other.gameObject.GetComponent<WallCollider>();
+        }
+
         if (other.transform.parent.gameObject.GetComponent<BuildingPart>())
         {
             BuildingPart snappedTo = other.transform.parent.gameObject.GetComponent<BuildingPart>();
             Window window = transform.parent.gameObject.GetComponent<Window>();
             window.SetSnap(snappedTo);
             
-            Debug.Log("lock to wall...");
+            /*Debug.Log("lock to wall...");
             Debug.Log(snappedTo.transform.position);
             Debug.Log(snappedTo.transform.localRotation);
-            Debug.Log(snappedTo.transform.localScale);
+            Debug.Log(snappedTo.transform.localScale);*/
         }
     }
 }

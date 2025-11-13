@@ -6,7 +6,9 @@ using UnityEngine;
 public class Window : MonoBehaviour
 {
     private BuildingPart snappedTo;
+    public WallCollider wall;
     public Shingle shingle;
+    public RidgeShingle ridgeShingle;
 
     // Start is called before the first frame update
     void Start()
@@ -18,12 +20,12 @@ public class Window : MonoBehaviour
     void Update()
     {
         if (snappedTo == null) return;
+
         ClearDormer();
 
         if (transform.hasChanged)
         {
-            //snappedTo.GetWindowPosition();
-
+            snappedTo.UpdateNextFrame();
             transform.hasChanged = false;
         }
 
@@ -32,13 +34,16 @@ public class Window : MonoBehaviour
             Vector3 backwards = transform.TransformDirection(Vector3.left);
             Vector3 startPosition = transform.position + transform.TransformDirection(up);
             Vector3 endPosition = snappedTo.GetDormerAttachPoint(startPosition + (0.15f * Vector3.up), backwards);
-
-            //Debug.DrawLine(startPosition, endPosition, Color.red);
+            float verticalDistanceToWall = snappedTo.GetDormerHeight(startPosition);
 
             Vector3 localStartPosition = transform.InverseTransformPoint(startPosition);
             Vector3 localEndPosition = transform.InverseTransformPoint(endPosition);
+            
             BuildDormerTop(localStartPosition, localEndPosition);
-            BuildDormerSides(localStartPosition, localEndPosition);
+            BuildDormerSide(localStartPosition, localEndPosition, verticalDistanceToWall, 1.0f);
+            BuildDormerSide(localStartPosition, localEndPosition, verticalDistanceToWall, -1.0f);
+            BuildDormerRidge(localStartPosition, localEndPosition, 1.0f);
+            BuildDormerRidge(localStartPosition, localEndPosition, -1.0f);
         }
     }
 
@@ -48,6 +53,7 @@ public class Window : MonoBehaviour
         {
             GameObject childObject = childTransform.gameObject;
             if (childObject.TryGetComponent<Shingle>(out Shingle shingle)) shingle.DeletePls();
+            if (childObject.TryGetComponent<RidgeShingle>(out RidgeShingle ridgeShingle)) ridgeShingle.DeletePls();
         }
     }
 
@@ -90,20 +96,76 @@ public class Window : MonoBehaviour
         }
     }
 
-    private void BuildDormerSides(Vector3 localStartPosition, Vector3 localEndPosition) 
+    private void BuildDormerSide(Vector3 localStartPosition, Vector3 localEndPosition, float verticalDistanceToWall, float flip)
     {
-        
+        Vector3 direction = localEndPosition - localStartPosition;
+
+        float length = Vector3.Distance(localStartPosition, localEndPosition);
+        float width = transform.GetChild(0).localScale.z;
+        float height = verticalDistanceToWall + 0.08f;
+        int numShinglesLong = Mathf.RoundToInt(length / 0.1f);
+        float lengthOfShingle = length / numShinglesLong;
+
+        for (int i = 0; i < numShinglesLong; i++)
+        {
+            Shingle newShingle = Instantiate(shingle);
+
+            newShingle.transform.position = new Vector3(
+                localStartPosition.x - (i * lengthOfShingle),
+                localStartPosition.y - (height / 2.0f) + 0.02f,
+                localStartPosition.z - flip * ((width / 2.0f) + 0.01f)
+            );
+
+            newShingle.transform.SetParent(transform.GetChild(3), false);
+            newShingle.transform.Translate(new Vector3(0.0f, (i / (float)numShinglesLong) * direction.y, 0.0f), Space.Self);
+            if (flip > 0.0f) newShingle.transform.Rotate(new Vector3(0.0f, 180.0f, 0.0f));
+            newShingle.transform.localScale = new Vector3(lengthOfShingle, height, 0.25f);
+
+            width -= 0.01f;
+        }
+    }
+    
+    private void BuildDormerRidge(Vector3 localStartPosition, Vector3 localEndPosition, float flip)
+    {
+        Vector3 direction = localEndPosition - localStartPosition;
+
+        float length = Vector3.Distance(localStartPosition, localEndPosition);
+        float width = transform.GetChild(0).localScale.z;
+        int numShinglesLong = Mathf.RoundToInt(length / 0.1f);
+        float lengthOfShingle = length / numShinglesLong;
+        float angle = Vector2.SignedAngle(Vector2.up, direction);
+
+        for (int i = 0; i < numShinglesLong; i++)
+        {
+            RidgeShingle newShingle = Instantiate(ridgeShingle);
+
+            newShingle.transform.position = new Vector3(
+                localStartPosition.x - (i * lengthOfShingle),
+                localStartPosition.y + 0.015f,
+                localStartPosition.z - flip * ((width / 2.0f) + 0.01f)
+            );
+
+            newShingle.transform.SetParent(transform.GetChild(3), false);
+            newShingle.transform.Translate(new Vector3(0.0f, (i / (float)numShinglesLong) * direction.y, 0.0f), Space.Self);
+            newShingle.transform.Rotate(new Vector3(0.0f, 90.0f, 0.0f));
+            newShingle.transform.Rotate(new Vector3(-9.0f - angle, 0.0f, 0.0f), Space.Self);
+            newShingle.transform.Rotate(new Vector3(0.0f, 0.0f, flip * 3.0f), Space.Self);
+            newShingle.transform.localScale = new Vector3(0.14f, 2.0f * lengthOfShingle, 0.2f);
+
+            width -= 0.01f;
+        }
     }
 
     public bool IsHalfWay()
     {
+        if (wall == null) return false;
+
         Vector3 direction = new Vector3(0.0f, transform.GetChild(0).localScale.y / 2.0f, 0.0f);
         Vector3 worldSpaceDirection = transform.TransformDirection(direction);
-        float min = (transform.position - worldSpaceDirection).y;
-        float max = (transform.position + worldSpaceDirection).y;
-        float topOfWall = snappedTo.transform.position.y + (snappedTo.transform.localScale.y / 2.0f);
+        Vector3 topPoint = transform.position + worldSpaceDirection;
+        Vector3 bottomPoint = transform.position - worldSpaceDirection;
 
-        return max > topOfWall && min < topOfWall;
+        return wall.PointIsWithinWall(bottomPoint) && !wall.PointIsWithinWall(topPoint);
     }
 
     public void SetSnap(BuildingPart buildingPart)

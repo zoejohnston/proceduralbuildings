@@ -21,7 +21,7 @@ public class BrickCollider : MonoBehaviour
     {
         GameObject newBrickObject = Instantiate(parentObject);
         Brick newBrick = newBrickObject.GetComponent<Brick>();
-        newBrickObject.transform.SetParent(parentObject.transform.parent);
+        newBrickObject.transform.SetParent(parentObject.transform.parent, false);
 
         return newBrick;
     }
@@ -137,6 +137,8 @@ public class BrickCollider : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        if (other.gameObject.transform.root != gameObject.transform.root) return;
+
         GameObject parentObject = gameObject.transform.parent.gameObject;
         Brick brick = parentObject.GetComponent<Brick>();
 
