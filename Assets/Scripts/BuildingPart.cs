@@ -25,6 +25,7 @@ public class BuildingPart : MonoBehaviour
     [Header("Storage")]
     public GameObject brickStorage;
     public GameObject shingleStorage;
+    public GameObject beamStorage;
 
     [Header("Roof")]
     [Range(0.5f, 1.75f)]
@@ -35,6 +36,10 @@ public class BuildingPart : MonoBehaviour
 
     [Range(0.2f, 1.0f)]
     public float ridgeLength = 0.5f;
+
+    [Header("Walls")]
+    public bool woodFramed = false;
+    public bool plastered = false;
 
     /* Public functions */
 
@@ -69,7 +74,8 @@ public class BuildingPart : MonoBehaviour
         float topOfWall = transform.position.y + (innerScale.y / 2.0f);
         float yShift = (startPosition.y - topOfWall) / roofHeight;
         if (yShift < 0.0f) yShift = 0.0f;
-        float xShift = Mathf.Pow(yShift / roofHeight, 1.0f / roofCurve);
+        float xShift = Mathf.Pow(yShift, 1.0f / roofCurve);
+
 
         Vector3 localDirection = transform.GetChild(0).InverseTransformDirection(direction);
         Vector3 worldPointOnPlane = transform.GetChild(0).TransformPoint(-0.5f * localDirection);
@@ -83,10 +89,9 @@ public class BuildingPart : MonoBehaviour
         Vector3 scaledDirection = transform.GetChild(0).TransformDirection(scaledLocalDirection);
         Plane plane = new Plane(direction, worldPointOnPlane);
 
-        float multiplier = 0.5f * xShift;
-        if (localDirection.z > 0.1f) multiplier *= ridgeLength;
+        float multiplier = (0.5f * xShift) + 0.01f;
 
-        Vector3 point = plane.ClosestPointOnPlane(startPosition) + multiplier * scaledDirection;
+        Vector3 point = plane.ClosestPointOnPlane(startPosition) + (multiplier * scaledDirection);
         return point;
     }
     
@@ -124,6 +129,7 @@ public class BuildingPart : MonoBehaviour
 
         InitBricks();
         InitRoof();
+        if (woodFramed) InitBeams();
 
         updatedLastFrame = true;
         scaleUpdated = false;
@@ -259,15 +265,22 @@ public class BuildingPart : MonoBehaviour
         }
     }
 
+    private void DistanceToGround(){
+
+    }
+
     void InitBricks()
     {
         float shrink = 0.2f;
         float height = innerScale.y;
-        InitQuoins(1.0f, height, 1.0f);
-        InitQuoins(1.0f, height, -1.0f);
-        InitQuoins(-1.0f, height, 1.0f);
-        InitQuoins(-1.0f, height, -1.0f);
 
+        if (!woodFramed) {
+            InitQuoins(1.0f, height, 1.0f);
+            InitQuoins(1.0f, height, -1.0f);
+            InitQuoins(-1.0f, height, 1.0f);
+            InitQuoins(-1.0f, height, -1.0f);
+        }
+        
         // Rest of bricks
         int numBricksTall = Mathf.RoundToInt(height / 0.1f);
         float heightOfBrick = height / numBricksTall;
@@ -523,11 +536,11 @@ public class BuildingPart : MonoBehaviour
             xShift = current * depth;
             yShift = Mathf.Pow(current, roofCurve) * roofHeight;
 
-            float distance = width;
+            float distance = width - 0.15f;
             int numShinglesWide = Mathf.RoundToInt(distance / shingleSize);
             float widthOfShingle = distance / numShinglesWide;
 
-            float startPosition = -width / 2.0f;
+            float startPosition = -distance / 2.0f;
 
             Vector2 uhh = new Vector2(xShift, yShift);
             Vector2 uhhhh = uhh - previous;
@@ -630,6 +643,11 @@ public class BuildingPart : MonoBehaviour
                 upTo += newWidth;
             }
         }
+    }
+
+    void InitBeams()
+    {
+
     }
 
     void InitRoof()

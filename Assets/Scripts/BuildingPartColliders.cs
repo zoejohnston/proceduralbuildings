@@ -70,7 +70,7 @@ public class BuildingPartColliders : MonoBehaviour
     {
         if (roofParent.transform.childCount > 0) DestroyImmediate(roofParent);
         
-        if (wallParent == null) {
+        if (roofParent == null) {
             roofParent = new GameObject("Roof");
             roofParent.transform.SetParent(transform, false);
         }

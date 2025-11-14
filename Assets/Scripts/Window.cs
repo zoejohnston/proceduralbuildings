@@ -103,12 +103,13 @@ public class Window : MonoBehaviour
         float length = Vector3.Distance(localStartPosition, localEndPosition);
         float width = transform.GetChild(0).localScale.z;
         float height = verticalDistanceToWall + 0.08f;
-        int numShinglesLong = Mathf.RoundToInt(length / 0.1f);
+        int numShinglesLong = Mathf.RoundToInt(length / 0.07f);
         float lengthOfShingle = length / numShinglesLong;
 
         for (int i = 0; i < numShinglesLong; i++)
         {
             Shingle newShingle = Instantiate(shingle);
+            //newShingle.SwitchToLeftCornerMesh();
 
             newShingle.transform.position = new Vector3(
                 localStartPosition.x - (i * lengthOfShingle),
@@ -130,9 +131,14 @@ public class Window : MonoBehaviour
         Vector3 direction = localEndPosition - localStartPosition;
 
         float length = Vector3.Distance(localStartPosition, localEndPosition);
+        float horizontalLength = Vector2.Distance(
+            new Vector2(localStartPosition.x, localStartPosition.z), 
+            new Vector2(localEndPosition.x, localEndPosition.z)
+        );
         float width = transform.GetChild(0).localScale.z;
         int numShinglesLong = Mathf.RoundToInt(length / 0.1f);
         float lengthOfShingle = length / numShinglesLong;
+        float lengthOfShingleHorizontally = horizontalLength / numShinglesLong;
         float angle = Vector2.SignedAngle(Vector2.up, direction);
 
         for (int i = 0; i < numShinglesLong; i++)
@@ -140,7 +146,7 @@ public class Window : MonoBehaviour
             RidgeShingle newShingle = Instantiate(ridgeShingle);
 
             newShingle.transform.position = new Vector3(
-                localStartPosition.x - (i * lengthOfShingle),
+                localStartPosition.x - (i * lengthOfShingleHorizontally),
                 localStartPosition.y + 0.015f,
                 localStartPosition.z - flip * ((width / 2.0f) + 0.01f)
             );
@@ -148,7 +154,7 @@ public class Window : MonoBehaviour
             newShingle.transform.SetParent(transform.GetChild(3), false);
             newShingle.transform.Translate(new Vector3(0.0f, (i / (float)numShinglesLong) * direction.y, 0.0f), Space.Self);
             newShingle.transform.Rotate(new Vector3(0.0f, 90.0f, 0.0f));
-            newShingle.transform.Rotate(new Vector3(-9.0f - angle, 0.0f, 0.0f), Space.Self);
+            newShingle.transform.Rotate(new Vector3(-8.0f-angle, 0.0f, 0.0f), Space.Self);
             newShingle.transform.Rotate(new Vector3(0.0f, 0.0f, flip * 3.0f), Space.Self);
             newShingle.transform.localScale = new Vector3(0.14f, 2.0f * lengthOfShingle, 0.2f);
 
