@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 
 [ExecuteInEditMode]
 public class Window : MonoBehaviour
@@ -9,6 +10,8 @@ public class Window : MonoBehaviour
     public WallCollider wall;
     public Shingle shingle;
     public RidgeShingle ridgeShingle;
+
+    public float offset;
 
     // Start is called before the first frame update
     void Start()
@@ -19,9 +22,10 @@ public class Window : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (snappedTo == null) return;
-
         ClearDormer();
+
+        if (snappedTo == null) return;
+        if (wall == null) return;
 
         if (transform.hasChanged)
         {
@@ -45,6 +49,25 @@ public class Window : MonoBehaviour
             BuildDormerRidge(localStartPosition, localEndPosition, 1.0f);
             BuildDormerRidge(localStartPosition, localEndPosition, -1.0f);
         }
+    }
+
+    void OnDestroy()
+    {
+        snappedTo.UpdateNextFrame();
+    }
+
+    public void UpdatePosition()
+    {   
+        if (wall == null) return;
+
+        Vector3 localDirection = transform.InverseTransformDirection(wall.transform.position - transform.position);
+        Vector3 localWallNormal = transform.InverseTransformDirection(wall.transform.TransformDirection(wall.normal));
+        Vector3 trans = Vector3.Dot(localWallNormal, localDirection) * localWallNormal;
+
+        transform.Translate(trans, Space.Self);
+        transform.Translate(new Vector3(0.05f + offset, 0.0f, 0.0f), Space.Self);
+
+        transform.hasChanged = false;
     }
 
     private void ClearDormer()
@@ -165,6 +188,7 @@ public class Window : MonoBehaviour
     public bool IsHalfWay()
     {
         if (wall == null) return false;
+        if (wall.isTopWall) return false;
 
         Vector3 direction = new Vector3(0.0f, transform.GetChild(0).localScale.y / 2.0f, 0.0f);
         Vector3 worldSpaceDirection = transform.TransformDirection(direction);

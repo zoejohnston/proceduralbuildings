@@ -11,6 +11,7 @@ public class BuildingPart : MonoBehaviour
     private float shingleSize = 0.1f;
     private bool updatedLastFrame = false;
 
+    [SerializeField]
     private Vector3 innerScale = Vector3.one;
     private bool scaleUpdated = false;
 
@@ -26,6 +27,7 @@ public class BuildingPart : MonoBehaviour
     public GameObject brickStorage;
     public GameObject shingleStorage;
     public GameObject beamStorage;
+    public GameObject windowStorage;
 
     [Header("Roof")]
     [Range(0.5f, 1.75f)]
@@ -125,6 +127,13 @@ public class BuildingPart : MonoBehaviour
             if (childObject.TryGetComponent<Shingle>(out Shingle shingle)) shingle.DeletePls();
             if (childObject.TryGetComponent<RidgeShingle>(out RidgeShingle ridgeShingle)) ridgeShingle.DeletePls();
             if (childObject.TryGetComponent<Brick>(out Brick brick)) brick.DeletePls();
+        }
+
+        foreach (Transform childTransform in windowStorage.transform)
+        {
+            GameObject childObject = childTransform.gameObject;
+
+            if (childObject.TryGetComponent<Window>(out Window window)) window.UpdatePosition();
         }
 
         InitBricks();
@@ -702,6 +711,7 @@ public class BuildingPart : MonoBehaviour
         }
         else if (updatedLastFrame)
         {
+            HandleInteractions();
             HandleInteractions();
         }
     }

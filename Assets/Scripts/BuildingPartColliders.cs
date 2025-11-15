@@ -22,6 +22,27 @@ public class BuildingPartColliders : MonoBehaviour
     Mesh ridgeRoofMeshInternal;
     Mesh roofMeshInternal;
 
+    public WallCollider[] GetWallColliders()
+    {
+        BuildingPart buildingPart = transform.parent.gameObject.GetComponent<BuildingPart>();
+        bool noTopWalls = buildingPart.ridgeLength > 0.2f;
+
+        WallCollider[] wallColliders = new WallCollider[noTopWalls ? 4 : 6];
+
+        for (int i = 0; i < 4; i++) {
+            wallColliders[i] = walls[i].GetComponent<WallCollider>();
+        }
+
+        if (!noTopWalls)
+        {
+            for (int i = 0; i < 2; i++) {
+                wallColliders[i + 4] = wallTops[i].GetComponent<WallCollider>();
+            }
+        }
+
+        return wallColliders;
+    }
+
     void InitWallColliders()
     {
         if (wallParent.transform.childCount > 0) DestroyImmediate(wallParent);

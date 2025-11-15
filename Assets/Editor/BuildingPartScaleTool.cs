@@ -4,7 +4,7 @@ using UnityEditor.EditorTools;
 using System;
 using System.Collections.Generic;
 
-[EditorToolContext("Building Part Scale Tool", typeof(BuildingPart))]
+[EditorToolContext("Building Part", typeof(BuildingPart))]
 public class BuildingPartScaleContext : EditorToolContext
 {
     public override void OnToolGUI(EditorWindow _) { }
@@ -37,7 +37,7 @@ public class BuildingPartScaleTool : EditorTool
         foreach (var trs in Selection.transforms)
             m_Selected.Add(new Selected() { transform = trs });
 
-        Undo.RecordObjects(Selection.transforms, "Building Part Scale Tool");
+        Undo.RecordObjects(Selection.transforms, "Building Part");
     }
     
     public override bool IsAvailable()

@@ -48,7 +48,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ddd188a6f5d5fe4f8c209b675c5a0ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shingle: {fileID: 0}
+  wall: {fileID: 0}
+  shingle: {fileID: 4697305777344811825, guid: 956efe9613f29814e88e74c02b1e070a, type: 3}
+  ridgeShingle: {fileID: 4953590821711047847, guid: 6db3d73f980036c41a819af700cefc4e, type: 3}
+  offset: -0.03
 --- !u!1 &7508332824125944543
 GameObject:
   m_ObjectHideFlags: 0

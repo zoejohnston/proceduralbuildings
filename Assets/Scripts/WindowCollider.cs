@@ -26,7 +26,7 @@ public class WindowCollider : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.GetComponent<WallCollider>())
+        /*if (other.gameObject.GetComponent<WallCollider>())
         {
             Debug.Log(other.gameObject.name);
             Window window = transform.parent.gameObject.GetComponent<Window>();
@@ -39,10 +39,10 @@ public class WindowCollider : MonoBehaviour
             Window window = transform.parent.gameObject.GetComponent<Window>();
             window.SetSnap(snappedTo);
             
-            /*Debug.Log("lock to wall...");
+            Debug.Log("lock to wall...");
             Debug.Log(snappedTo.transform.position);
             Debug.Log(snappedTo.transform.localRotation);
-            Debug.Log(snappedTo.transform.localScale);*/
-        }
+            Debug.Log(snappedTo.transform.localScale);
+        }*/
     }
 }

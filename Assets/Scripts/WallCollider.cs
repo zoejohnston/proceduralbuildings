@@ -7,6 +7,7 @@ public class WallCollider : MonoBehaviour
 {
     public Vector3 normal;
     public WallCollider connectedWall;
+    public bool isTopWall = false;
 
     // Start is called before the first frame update
     void Start()
@@ -18,6 +19,23 @@ public class WallCollider : MonoBehaviour
     void Update()
     {
 
+    }
+
+    public void PlaceWindow(Window window, BuildingPart buildingPart, Vector3 point)
+    {
+        Window newWindow = Instantiate(window, buildingPart.windowStorage.transform);
+        newWindow.SetSnap(buildingPart);
+
+        if (isTopWall) {
+            newWindow.wall = connectedWall;
+        } else {
+            newWindow.wall = this;
+        }
+
+        newWindow.transform.position = point;
+        newWindow.transform.LookAt(point + transform.TransformDirection(normal), Vector3.up);
+        newWindow.transform.Rotate(new Vector3(0.0f, -90.0f, 0.0f));
+        newWindow.transform.Translate(new Vector3(newWindow.offset, 0.0f, 0.0f), Space.Self);
     }
 
     private bool RaycastHelper(MeshCollider collider, Vector3 point)
