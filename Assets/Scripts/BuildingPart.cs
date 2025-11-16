@@ -22,6 +22,9 @@ public class BuildingPart : MonoBehaviour
     public Quoin quoin;
     public Shingle shingle;
     public RidgeShingle ridgeShingle;
+    public Beam beam;
+    public SubBeam subBeam;
+    public DeletesIfAskedNicely simpleBeam;
 
     [Header("Storage")]
     public GameObject brickStorage;
@@ -71,7 +74,7 @@ public class BuildingPart : MonoBehaviour
         scaleUpdated = true;
     }
 
-    public Vector3 GetDormerAttachPoint(Vector3 startPosition, Vector3 direction)
+    public Vector3 GetDormerAttachPoint(Vector3 startPosition, Vector3 direction, bool flip)
     {
         float topOfWall = transform.position.y + (innerScale.y / 2.0f);
         float yShift = (startPosition.y - topOfWall) / roofHeight;
@@ -91,7 +94,9 @@ public class BuildingPart : MonoBehaviour
         Vector3 scaledDirection = transform.GetChild(0).TransformDirection(scaledLocalDirection);
         Plane plane = new Plane(direction, worldPointOnPlane);
 
-        float multiplier = (0.5f * xShift) + 0.01f;
+        float multiplier = 0.5f * xShift;
+        if (flip) multiplier *= ridgeLength;
+        multiplier += 0.01f;
 
         Vector3 point = plane.ClosestPointOnPlane(startPosition) + (multiplier * scaledDirection);
         return point;
@@ -136,6 +141,15 @@ public class BuildingPart : MonoBehaviour
             if (childObject.TryGetComponent<Window>(out Window window)) window.UpdatePosition();
         }
 
+        foreach (Transform childTransform in beamStorage.transform)
+        {
+            GameObject childObject = childTransform.gameObject;
+
+            if (childObject.TryGetComponent<DeletesIfAskedNicely>(out DeletesIfAskedNicely pls)) pls.DeletePls();
+            if (childObject.TryGetComponent<Beam>(out Beam beam)) beam.DeletePls();
+            if (childObject.TryGetComponent<SubBeam>(out SubBeam subBeam)) subBeam.DeletePls();
+        }
+
         InitBricks();
         InitRoof();
         if (woodFramed) InitBeams();
@@ -151,6 +165,20 @@ public class BuildingPart : MonoBehaviour
         Physics.simulationMode = SimulationMode.FixedUpdate;
 
         updatedLastFrame = false;
+
+        // Some post collision stuff
+        foreach (Transform childTransform in brickStorage.transform)
+        {
+            GameObject childObject = childTransform.gameObject;
+
+            if (childObject.TryGetComponent<Brick>(out Brick brick))
+            {
+                if (brick.splitNoise > 0.65f && !brick.shouldntSplit)
+                {
+                    brick.Split(brick.splitLocation);
+                }
+            }
+        }
     }
 
     /*  Helpers  */
@@ -257,9 +285,8 @@ public class BuildingPart : MonoBehaviour
                 newBrick.transform.localScale = new Vector3(0.1f, heightOfBrick, newWidth);
                 newBrick.transform.SetParent(brickStorage.transform, false);
 
-                float splitNoise = Mathf.PerlinNoise(i / 0.8f, j / 0.8f);
-                float splitLocation = 0.7f * (Mathf.PerlinNoise(i / 0.3f, j / 0.3f) - 0.5f);
-                /*if (splitNoise > 0.65f) newBrick.Split(splitLocation);*/
+                newBrick.splitNoise = Mathf.PerlinNoise(i / 0.8f, j / 0.8f);
+                newBrick.splitLocation = 0.7f * (Mathf.PerlinNoise(i / 0.3f, j / 0.3f) - 0.5f);
 
                 /*if (i != 0 && i != numBricksTall - 1)
                 {
@@ -348,6 +375,7 @@ public class BuildingPart : MonoBehaviour
         return step;
     }
 
+    //
     Vector3 PlaceRidgeShingles(float xShift, float yShift, float current, float otherWidth, float width, float side, float which, Vector3 previous, int count)
     {
         RidgeShingle newShingle = Instantiate(ridgeShingle);
@@ -375,6 +403,49 @@ public class BuildingPart : MonoBehaviour
         return retVal;
     }
 
+    //
+    Vector3 PlaceSimpleRidgeShingles(float xShift, float yShift, float width, float side, float which, Vector3 previous)
+    {
+        RidgeShingle newShingle = Instantiate(ridgeShingle);
+        
+        newShingle.transform.position = new Vector3(
+            side * ((innerScale.x / 2.0f) - xShift),
+            (innerScale.y / 2.0f) + yShift,
+            which * (width / 2.0f)
+        );
+
+        float lengthOfShingle = 1.2f * Vector3.Distance(previous, newShingle.transform.position);
+
+        if (xShift < 0.71f) {
+            DeletesIfAskedNicely newBeam = Instantiate(simpleBeam);
+            newBeam.transform.position = newShingle.transform.position;
+            newBeam.transform.LookAt(previous, Vector3.up);
+            newBeam.transform.position = newShingle.transform.position - new Vector3(0.0f, 0.0f, which * 0.06f);
+            newBeam.transform.Translate(new Vector3(0.0f, -0.025f, 0.0f), Space.Self);
+            newBeam.transform.localScale = new Vector3(0.08f, 0.05f, lengthOfShingle);
+            newBeam.transform.SetParent(beamStorage.transform, false);
+
+            Beam newBeam2 = Instantiate(beam);
+            //newBeam2.SetOtherMesh();
+            newBeam2.transform.position = newShingle.transform.position;
+            newBeam2.transform.Translate(new Vector3(-side * 0.01f, -0.03f, -which * 0.4f), Space.Self);
+            newBeam2.transform.localScale = new Vector3(0.7f, 0.7f, 0.8f);
+            newBeam2.transform.SetParent(beamStorage.transform, false);
+        }
+
+        newShingle.transform.LookAt(previous, Vector3.up);
+        Vector3 retVal = newShingle.transform.position;
+
+        newShingle.transform.Translate(new Vector3(0.0f, 0.0f, (lengthOfShingle / 2.0f) + 0.03f));
+        newShingle.transform.Rotate(-90.0f - (5.5f * roofCurve), 0.0f, 0.0f, Space.Self);
+        newShingle.transform.Translate(new Vector3(0.0f, 0.0f, 0.01f), Space.Self);
+        newShingle.transform.localScale = new Vector3(0.15f, lengthOfShingle, 0.16f);
+        newShingle.transform.SetParent(shingleStorage.transform, false);
+
+        return retVal;
+    }
+
+    //
     void PlaceTopRidgeShingles(float length)
     {
         float width = ((1.0f - length) * innerScale.z) + 0.09f;
@@ -537,6 +608,17 @@ public class BuildingPart : MonoBehaviour
         float yShift = Mathf.Pow(current, roofCurve) * roofHeight;
         Vector2 previous = new Vector2(xShift, yShift);
 
+        Vector3 rightRidgeShingle = new Vector3(
+            side * ((innerScale.x / 2.0f) - xShift),
+            (innerScale.y / 2.0f) + yShift,
+            (width / 2.0f)
+        );
+        Vector3 leftRidgeShingle = new Vector3(
+            side * ((innerScale.x / 2.0f) - xShift),
+            (innerScale.y / 2.0f) + yShift,
+            -(width / 2.0f)
+        );
+
         while (current <= 1.0f + Mathf.Epsilon)
         {
             float step = ShingleStep(xShift, yShift, current, lengthOfShingle, depth);
@@ -545,7 +627,12 @@ public class BuildingPart : MonoBehaviour
             xShift = current * depth;
             yShift = Mathf.Pow(current, roofCurve) * roofHeight;
 
-            float distance = width - 0.15f;
+            if (woodFramed) {
+                rightRidgeShingle = PlaceSimpleRidgeShingles(xShift, yShift, width, side, 1.0f, rightRidgeShingle);
+                leftRidgeShingle = PlaceSimpleRidgeShingles(xShift, yShift, width, side, -1.0f, leftRidgeShingle);
+            }
+
+            float distance = width - (woodFramed ? -0.15f : 0.15f);
             int numShinglesWide = Mathf.RoundToInt(distance / shingleSize);
             float widthOfShingle = distance / numShinglesWide;
 
@@ -587,26 +674,31 @@ public class BuildingPart : MonoBehaviour
     {
         int numBricksTall = Mathf.RoundToInt(roofHeight / 0.1f);
         float heightOfBrick = roofHeight / numBricksTall;
-        numBricksTall += 1;
+        if (!woodFramed) numBricksTall += 1;
 
         for (int i = 0; i < numBricksTall; i++)
         {
             float yShift = (heightOfBrick / 2.0f) + (heightOfBrick * (i - 1));
+            if (woodFramed) yShift = heightOfBrick * i;
             if (yShift < 0.0f) yShift = 0.0f;
             float xShift = Mathf.Pow(yShift / roofHeight, 1.0f / roofCurve);
 
             float distance = width * (1.0f - xShift);
 
             if (i == 0) {
+                if (woodFramed) continue;
                 distance = width - 0.2f;
-                yShift = (heightOfBrick / -2.0f);
+                yShift = heightOfBrick / -2.0f;
             }
+
+            if (woodFramed) yShift = (heightOfBrick * (i - 1)) - (heightOfBrick / 2.0f);
 
             if (distance > width - 0.2f) distance = width - 0.2f;
             int numBricksWide = Mathf.RoundToInt(distance / 0.15f);
             float widthOfBrick = distance / numBricksWide;
 
             if (numBricksWide == 0) {
+                if (woodFramed) continue;
                 numBricksWide = 1;
                 widthOfBrick = 0.1f;
                 distance = 0.1f;
@@ -654,9 +746,112 @@ public class BuildingPart : MonoBehaviour
         }
     }
 
-    void InitBeams()
+    void PlaceVerticalBeams(int numBeamsTall, float heightOfBeam, int numBeamsWide, float widthOfBeam, float width, float depth, bool flip, float side)
     {
+        for (int i = 0; i < numBeamsTall; i++)
+        {
+            for (int j = 0; j < numBeamsWide; j++)
+            {
+                SubBeam newBeam = Instantiate(subBeam);
 
+                if (flip) {
+                    newBeam.transform.position = new Vector3(
+                        ((j + 1) * widthOfBeam) - (width / 2.0f),
+                        (i * heightOfBeam) + (heightOfBeam / 2.0f) - (innerScale.y / 2.0f),
+                        side * ((depth / 2.0f) + 0.04f)
+                    );
+                } else {
+                    newBeam.transform.position = new Vector3(
+                        side * ((depth / 2.0f) + 0.04f),
+                        (i * heightOfBeam) + (heightOfBeam / 2.0f) - (innerScale.y / 2.0f),
+                        ((j + 1) * widthOfBeam) - (width / 2.0f)
+                    );
+                }
+
+                float yRotation = flip ? side * 90.0f : (side > 0.0f ? 0.0f : 180.0f);
+                newBeam.transform.Rotate(new Vector3(90.0f, 0.0f, yRotation));
+                newBeam.transform.localScale = new Vector3(0.4f, 0.75f, heightOfBeam);
+                newBeam.transform.SetParent(beamStorage.transform, false);
+            }
+        }
+    }
+
+    void PlaceHorizontalBeams(int numBeamsTall, float heightOfBeam, float widthOfBeam, float depth, bool flip, float side)
+    {
+        if (ridgeLength <= 0.2f && flip) numBeamsTall += 1;
+
+        for (int i = 0; i < numBeamsTall; i++)
+        {
+            Beam newBeam = Instantiate(beam);
+
+            if (flip) {
+                newBeam.transform.position = new Vector3(
+                    0.0f,
+                    (i * heightOfBeam) + heightOfBeam - (innerScale.y / 2.0f),
+                    side * ((depth / 2.0f) + 0.04f)
+                );
+                newBeam.transform.Rotate(new Vector3(0.0f, 90.0f, 0.0f));
+                newBeam.transform.localScale = new Vector3(0.5f, 1.0f, widthOfBeam);
+            } else {
+                newBeam.transform.position = new Vector3(
+                    side * ((depth / 2.0f) + 0.04f),
+                    (i * heightOfBeam) + heightOfBeam - (innerScale.y / 2.0f),
+                    0.0f
+                );
+                newBeam.transform.localScale = new Vector3(0.5f, 1.0f, widthOfBeam);
+            }
+            
+            newBeam.transform.SetParent(beamStorage.transform, false);
+        }
+    }
+
+    void PlaceCornerBeams(float height, float width, float depth)
+    {   
+        for (int i = -1; i < 2; i += 2)
+        {
+            for (int j = -1; j < 2; j += 2)
+            {
+                Beam newBeam = Instantiate(beam);
+
+                newBeam.transform.position = new Vector3(
+                    i * ((depth / 2.0f) + 0.025f),
+                    0.0f,
+                    j * ((width / 2.0f) + 0.025f)
+                );
+
+                newBeam.transform.Rotate(new Vector3(90.0f, 0.0f, 0.0f));
+                newBeam.transform.localScale = new Vector3(1.2f, 1.2f, height);
+                newBeam.transform.SetParent(beamStorage.transform, false);
+            }
+        }
+    }
+
+    void InitBeams()
+    {   
+        float shrink = 0.2f;
+
+        int numBeamsTall = Mathf.RoundToInt(innerScale.y / 0.5f);
+        float heightOfBeam = innerScale.y / numBeamsTall;
+        
+        float width = innerScale.z - shrink;
+        int numBeamsWide = Mathf.RoundToInt(width / 0.35f);
+        float widthOfBeam = width / numBeamsWide;
+        
+        float depth = innerScale.x - shrink;
+        int numBeamsDeep = Mathf.RoundToInt(depth / 0.35f);
+        float depthOfBeam = depth / numBeamsDeep;
+
+        PlaceVerticalBeams(numBeamsTall, heightOfBeam, numBeamsWide - 1, widthOfBeam, width, innerScale.x - shrink, false, 1.0f);
+        PlaceVerticalBeams(numBeamsTall, heightOfBeam, numBeamsDeep - 1, depthOfBeam, innerScale.x - shrink, width, true, 1.0f);
+        PlaceVerticalBeams(numBeamsTall, heightOfBeam, numBeamsWide - 1, widthOfBeam, width, innerScale.x - shrink, false, -1.0f);
+        PlaceVerticalBeams(numBeamsTall, heightOfBeam, numBeamsDeep - 1, depthOfBeam, innerScale.x - shrink, width, true, -1.0f);
+
+        PlaceHorizontalBeams(numBeamsTall - 1, heightOfBeam, width, innerScale.x - shrink, false, 1.0f);
+        PlaceHorizontalBeams(numBeamsTall - 1, heightOfBeam, innerScale.x - shrink, width, true, 1.0f);
+        PlaceHorizontalBeams(numBeamsTall - 1, heightOfBeam, width, innerScale.x - shrink, false, -1.0f);
+        PlaceHorizontalBeams(numBeamsTall - 1, heightOfBeam, innerScale.x - shrink, width, true, -1.0f);
+
+        PlaceCornerBeams(innerScale.y, width, innerScale.x - shrink);
     }
 
     void InitRoof()
@@ -676,13 +871,16 @@ public class BuildingPart : MonoBehaviour
         {
             PlaceShinglesSimple(innerScale.z, innerScale.x / 2.0f, false, 1.0f);
             PlaceShinglesSimple(innerScale.z, innerScale.x / 2.0f, false, -1.0f);
+            PlaceTopRidgeShingles(woodFramed ? 0.0f : 0.2f);
             MoreBricks(innerScale.x, 1.0f);
             MoreBricks(innerScale.x, -1.0f);
-            MoreQuoins(1.0f, innerScale.y, 1.0f);
-            MoreQuoins(1.0f, innerScale.y, -1.0f);
-            MoreQuoins(-1.0f, innerScale.y, 1.0f);
-            MoreQuoins(-1.0f, innerScale.y, -1.0f);
-            PlaceTopRidgeShingles(0.2f);
+
+            if (!woodFramed) {
+                MoreQuoins(1.0f, innerScale.y, 1.0f);
+                MoreQuoins(1.0f, innerScale.y, -1.0f);
+                MoreQuoins(-1.0f, innerScale.y, 1.0f);
+                MoreQuoins(-1.0f, innerScale.y, -1.0f);
+            }
         }
     }
 
@@ -691,6 +889,7 @@ public class BuildingPart : MonoBehaviour
     {
         InitBricks();
         InitRoof();
+        if (woodFramed) InitBeams();
     }
 
     // Update is called once per frame

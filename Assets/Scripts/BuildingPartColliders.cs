@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -13,13 +14,20 @@ public class BuildingPartColliders : MonoBehaviour
     public GameObject wallParent;
     public GameObject roofParent;
 
+    [SerializeField]
     GameObject[] walls;
+    [SerializeField]
     GameObject[] wallTops;
+    [SerializeField]
     Mesh wallTopMesh;
 
+    [SerializeField]
     GameObject[] ridgeRoofs;
+    [SerializeField]
     GameObject[] roofs;
+    [SerializeField]
     Mesh ridgeRoofMeshInternal;
+    [SerializeField]
     Mesh roofMeshInternal;
 
     public WallCollider[] GetWallColliders()
@@ -270,8 +278,8 @@ public class BuildingPartColliders : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        InitWallColliders();
-        InitRoofColliders();
+        if (walls == null || wallTops == null) InitWallColliders();
+        if (roofs == null || ridgeRoofs == null) InitRoofColliders();
         UpdateColliders();
     }
 

@@ -6,7 +6,7 @@ using UnityEngine.Assertions.Must;
 [ExecuteInEditMode]
 public class Window : MonoBehaviour
 {
-    private BuildingPart snappedTo;
+    public BuildingPart snappedTo;
     public WallCollider wall;
     public Shingle shingle;
     public RidgeShingle ridgeShingle;
@@ -37,7 +37,7 @@ public class Window : MonoBehaviour
             Vector3 up = new Vector3(0.0f, (transform.GetChild(0).localScale.y / 2.0f) + 0.02f, 0.0f);
             Vector3 backwards = transform.TransformDirection(Vector3.left);
             Vector3 startPosition = transform.position + transform.TransformDirection(up);
-            Vector3 endPosition = snappedTo.GetDormerAttachPoint(startPosition + (0.15f * Vector3.up), backwards);
+            Vector3 endPosition = snappedTo.GetDormerAttachPoint(startPosition + (0.15f * Vector3.up), backwards, wall.connectedWall != null);
             float verticalDistanceToWall = snappedTo.GetDormerHeight(startPosition);
 
             Vector3 localStartPosition = transform.InverseTransformPoint(startPosition);

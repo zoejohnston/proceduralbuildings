@@ -10,6 +10,10 @@ public class Brick : MonoBehaviour
     private bool delete = false;
     private bool checkCollisions = false;
 
+    public float splitNoise = 0.0f;
+    public float splitLocation = 0.0f;
+    public bool shouldntSplit = false;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -63,6 +67,7 @@ public class Brick : MonoBehaviour
         Vector3 new_point = transform.TransformPoint(new Vector3(0.0f, (p / 2.0f) - 0.25f, 0.0f));
         transform.Translate(new_point - transform.position, Space.World);
         transform.localScale = new Vector3(transform.localScale.x, multiplier * transform.localScale.y, transform.localScale.z);
+        shouldntSplit = true;
     }
 
     public void ResizeBottom(float p)
@@ -72,16 +77,16 @@ public class Brick : MonoBehaviour
         Vector3 new_point = transform.TransformPoint(new Vector3(0.0f, (p / 2.0f) + 0.25f, 0.0f));
         transform.Translate(new_point - transform.position, Space.World);
         transform.localScale = new Vector3(transform.localScale.x, multiplier * transform.localScale.y, transform.localScale.z);
+        shouldntSplit = true;
     }
 
     public void Split(float p)
     {
         GameObject newBrickObject = Instantiate(gameObject);
         Brick newBrick = newBrickObject.GetComponent<Brick>();
+        newBrickObject.transform.SetParent(transform.parent, false);
         newBrick.ResizeBottom(p);
         newBrick.EnableCollisions();
-        newBrickObject.transform.SetParent(transform.parent);
-        newBrick.transform.SetParent(transform.parent);
 
         ResizeTop(p);
     }
