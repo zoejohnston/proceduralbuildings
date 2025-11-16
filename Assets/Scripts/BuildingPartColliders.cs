@@ -7,13 +7,17 @@ using UnityEngine;
 [ExecuteInEditMode]
 public class BuildingPartColliders : MonoBehaviour
 {
+    [Header("Meshes")]
     public Mesh wallMesh;
     public Mesh roofRidgeMesh;
     public Mesh roofMesh;
 
+    [Header("Children")]
     public GameObject wallParent;
     public GameObject roofParent;
+    public GameObject mainCollider;
 
+    [Header("Serialized Fields")]
     [SerializeField]
     GameObject[] walls;
     [SerializeField]
@@ -49,6 +53,15 @@ public class BuildingPartColliders : MonoBehaviour
         }
 
         return wallColliders;
+    }
+
+    // TODO: add logic for roof
+    public bool PointIsInside(Vector3 point)
+    {
+        MainBuildingPartCollider mainSection = mainCollider.GetComponent<MainBuildingPartCollider>();
+        if (mainSection.PointIsInside(point)) return true;
+
+        return false;
     }
 
     void InitWallColliders()
@@ -206,6 +219,9 @@ public class BuildingPartColliders : MonoBehaviour
         float xScale = buildingPartScale.x - 0.25f;
         float zScale = buildingPartScale.z - 0.25f;
         float topWallExtraHeight = noTopWalls ? 0.0f : 0.05f;
+
+        // Main collider 
+        mainCollider.transform.localScale = new Vector3(buildingPartScale.x - 0.15f, buildingPartScale.y, buildingPartScale.z - 0.15f);
 
         // Wall colliders
         walls[0].transform.localScale = new Vector3(xScale - 0.1f, buildingPartScale.y + topWallExtraHeight, 0.1f);

@@ -108,6 +108,17 @@ public class BuildingPart : MonoBehaviour
         return position.y - topOfWall;
     }
 
+    //
+    public MeshFilter[] PrepForExport()
+    {
+        Transform storageTransform = transform.Find("Storage");
+        if (storageTransform == null) return null;
+
+        ExportPrep exportPrep = storageTransform.GetComponent<ExportPrep>();
+        if (exportPrep == null) return null;
+        return exportPrep.Merge();
+    }
+
     /* Private functions */
 
     private void OnValidate()

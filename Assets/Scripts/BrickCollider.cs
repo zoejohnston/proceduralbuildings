@@ -137,7 +137,9 @@ public class BrickCollider : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.transform.root != gameObject.transform.root) return;
+        if (other.gameObject.transform.root != gameObject.transform.root) {
+            return;
+        }
 
         GameObject parentObject = gameObject.transform.parent.gameObject;
         Brick brick = parentObject.GetComponent<Brick>();
@@ -151,15 +153,13 @@ public class BrickCollider : MonoBehaviour
             Vector3 worldSpaceHorizontalDirection = horizontalScale * horizontalDirection;
             float horizontalMin = transform.InverseTransformPoint(quoin.transform.position - worldSpaceHorizontalDirection).z;
             float horizontalMax = transform.InverseTransformPoint(quoin.transform.position + worldSpaceHorizontalDirection).z;
-            //Debug.DrawLine(quoin.transform.position - worldSpaceHorizontalDirection, quoin.transform.position + worldSpaceHorizontalDirection, Color.blue);
             
             Vector3 verticalDirection = brick.transform.TransformDirection(Vector3.up);
             float verticalScale = Vector3.Dot(verticalDirection, quoin.transform.localScale) / 2.0f;
             Vector3 worldSpaceVerticalDirection = verticalScale * verticalDirection;
             float verticalMin = transform.InverseTransformPoint(quoin.transform.position - worldSpaceVerticalDirection).y;
             float verticalMax = transform.InverseTransformPoint(quoin.transform.position + worldSpaceVerticalDirection).y;
-           // Debug.DrawLine(quoin.transform.position - worldSpaceVerticalDirection, quoin.transform.position + worldSpaceVerticalDirection, Color.red);
-
+           
             if (horizontalMax < horizontalMin) {
                 float temp = horizontalMin;
                 horizontalMin = horizontalMax;

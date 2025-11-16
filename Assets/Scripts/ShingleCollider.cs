@@ -20,7 +20,9 @@ public class ShingleCollider : MonoBehaviour
     
     void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.transform.root != gameObject.transform.root) return;
+        if (other.gameObject.transform.root != gameObject.transform.root) {
+            return;
+        }
         
         // If the colliding object is a window
         if (other.gameObject.transform.parent.gameObject.GetComponent<Window>())
