@@ -64,18 +64,22 @@ public class ExportMenu : MonoBehaviour
 
             brickInstances[i] = new CombineInstance {
                 mesh = meshFilters[0].sharedMesh,
-                transform = meshFilters[0].transform.localToWorldMatrix,
+                transform = Matrix4x4.identity
             };
 
             shingleInstances[i] = new CombineInstance {
                 mesh = meshFilters[1].sharedMesh,
-                transform = meshFilters[1].transform.localToWorldMatrix,
+                transform = Matrix4x4.identity
             };
 
             beamInstances[i] = new CombineInstance {
                 mesh = meshFilters[2].sharedMesh,
-                transform = meshFilters[2].transform.localToWorldMatrix,
+                transform = Matrix4x4.identity
             };
+
+            DestroyImmediate(meshFilters[0]);
+            DestroyImmediate(meshFilters[1]);
+            DestroyImmediate(meshFilters[2]);
         }
 
         //
@@ -99,5 +103,6 @@ public class ExportMenu : MonoBehaviour
         string filePath = Path.Combine(Application.dataPath, fileName);
 
         ExportWorkaround(exportParent, filePath);
+        DestroyImmediate(exportParent);
     }
 }
