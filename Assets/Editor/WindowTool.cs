@@ -8,7 +8,6 @@ using UnityEditor.Search;
 [EditorTool("Window Tool", typeof(BuildingPart))]
 public class WindowTool : EditorTool
 {   
-    //[Overlay(typeof(SceneView), "Window Selector Overlay")]
     [Overlay(defaultDisplay = true)]
     public class WindowSelectorOverlay : Overlay, ITransientOverlay
     {   
@@ -31,7 +30,23 @@ public class WindowTool : EditorTool
         public bool visible => true;
     }
 
+    [SerializeField]
+    private Texture2D toolIcon;
+    private GUIContent toolInfo;
+
     private WindowSelectorOverlay overlay;
+
+    private void OnEnable()
+    {
+        if (toolInfo == null) {
+            toolInfo = new GUIContent() { image = toolIcon, text = "Window Tool" };
+        }
+    }
+
+    public override GUIContent toolbarIcon
+    {
+        get { return toolInfo; }
+    }
 
     public override void OnActivated()
     {

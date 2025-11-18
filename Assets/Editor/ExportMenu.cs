@@ -11,23 +11,20 @@ using System.Reflection;
 
 public class ExportMenu : MonoBehaviour
 {
-    // Code from https://discussions.unity.com/t/fbx-exporter-binary-export-doesnt-work-via-editor-scripting/841939/3
+    // The code in this function is from https://discussions.unity.com/t/fbx-exporter-binary-export-doesnt-work-via-editor-scripting/841939/3
     private static void ExportWorkaround(GameObject objectToExport, string filePath)
     {
-        // Find relevant internal types in Unity.Formats.Fbx.Editor assembly
-        Type[] types = AppDomain.CurrentDomain.GetAssemblies().First(x => x.FullName == "Unity.Formats.Fbx.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null").GetTypes();
+        string assemblyName = "Unity.Formats.Fbx.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+        Type[] types = AppDomain.CurrentDomain.GetAssemblies().First(x => x.FullName == assemblyName).GetTypes();
         Type optionsInterfaceType = types.First(x => x.Name == "IExportOptions");
         Type optionsType = types.First(x => x.Name == "ExportOptionsSettingsSerializeBase");
 
-        // Instantiate a settings object instance
         MethodInfo optionsProperty = typeof(ModelExporter).GetProperty("DefaultOptions", BindingFlags.Static | BindingFlags.NonPublic).GetGetMethod(true);
         object optionsInstance = optionsProperty.Invoke(null, null);
 
-        // Change the export setting from ASCII to binary
         FieldInfo exportFormatField = optionsType.GetField("exportFormat", BindingFlags.Instance | BindingFlags.NonPublic);
         exportFormatField.SetValue(optionsInstance, 1);
 
-        // Invoke the ExportObject method with the settings param
         MethodInfo exportObjectMethod = typeof(ModelExporter).GetMethod("ExportObject", BindingFlags.Static | BindingFlags.NonPublic, Type.DefaultBinder, new Type[] { typeof(string), typeof(UnityEngine.Object), optionsInterfaceType }, null);
         exportObjectMethod.Invoke(null, new object[] { filePath, objectToExport, optionsInstance });
     }

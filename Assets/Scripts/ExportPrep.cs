@@ -40,9 +40,9 @@ public class ExportPrep : MonoBehaviour
         foreach (Transform windowTransform in windowStorageTransform)
         {
             // TODO: Add pane export logic
-            Transform frameTransform = transform.Find("Frame");
-            Transform paneTransform = transform.Find("Pane");
-            Transform dormerTransform = transform.Find("Dormer");
+            Transform frameTransform = windowTransform.Find("Frame");
+            Transform paneTransform = windowTransform.Find("Pane");
+            Transform dormerTransform = windowTransform.Find("Dormer");
 
             // Merges window frame with other wood beams
             if (frameTransform.gameObject.TryGetComponent(out MeshFilter frameMeshFilter))

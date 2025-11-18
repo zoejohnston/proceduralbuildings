@@ -8,24 +8,111 @@ public class SubBeam : MonoBehaviour
     private bool delete = false;
     public bool wasMovedByCollision = false;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    public List<Vector3> horizontalMins = new List<Vector3>();
+    public List<Vector3> horizontalMaxes = new List<Vector3>();
+    public List<Vector3> verticalMins = new List<Vector3>();
+    public List<Vector3> verticalMaxes = new List<Vector3>();
+    public int collisionCount = 0;
 
     // Update is called once per frame
     void Update()
     {
+        for (int i = 0; i < collisionCount; i++) {
+            float horizontalMin = transform.InverseTransformPoint(horizontalMins[i]).y;
+            float horizontalMax = transform.InverseTransformPoint(horizontalMaxes[i]).y;
+            float verticalMin = transform.InverseTransformPoint(verticalMins[i]).z;
+            float verticalMax = transform.InverseTransformPoint(verticalMaxes[i]).z;
+
+            if (horizontalMax < horizontalMin) {
+                float temp = horizontalMin;
+                horizontalMin = horizontalMax;
+                horizontalMax = temp;
+            }
+
+            Vector3 windowBase = verticalMins[i];
+            HandleBeamCollisions(horizontalMin, horizontalMax, verticalMin, verticalMax, windowBase, collisionCount == 1);
+        }
+
+        horizontalMins = new List<Vector3>();
+        horizontalMaxes = new List<Vector3>();
+        verticalMins = new List<Vector3>();
+        verticalMaxes = new List<Vector3>();
+        collisionCount = 0;
+
         if (delete) {
             DestroyImmediate(gameObject);
         }
+    }
+
+    public void QueueBeamCollisions(Vector3 horizontalMin, Vector3 horizontalMax, Vector3 verticalMin, Vector3 verticalMax)
+    {
+        horizontalMins.Add(horizontalMin);
+        horizontalMaxes.Add(horizontalMax);
+        verticalMins.Add(verticalMin);
+        verticalMaxes.Add(verticalMax);
+        collisionCount++;
     }
 
     public void DeletePls()
     {
         delete = true;
         gameObject.transform.GetChild(1).gameObject.GetComponent<MeshRenderer>().enabled = false;
+    }
+
+    void HandleBeamCollisions(float horizontalMin, float horizontalMax, float verticalMin, float verticalMax, Vector3 windowBase, bool doCrossBeams)
+    {
+        if (wasMovedByCollision) {
+            if (-0.025f > horizontalMin && 0.025f < horizontalMax) {
+                if (verticalMax < -0.5f && verticalMin > 0.5f) { 
+                    DeletePls(); 
+
+                } else if (verticalMax < -0.5f) {
+                    ResizeTop(verticalMin);
+
+                } else if (verticalMin > 0.5f) {
+                    ResizeBottom(verticalMax);
+
+                } else {
+                    SubBeam newBeamTop = CopyBeam(gameObject);
+                    newBeamTop.ResizeBottom(verticalMax);
+                    ResizeTop(verticalMin);
+                }
+            }
+        } else {
+            if (-0.025f > horizontalMin && 0.025f < horizontalMax) {
+                SubBeam newBeamLeft = CopyBeam(gameObject);
+                newBeamLeft.MoveTo(horizontalMax + 0.02f);
+                MoveTo(horizontalMin - 0.02f);
+
+                if (!doCrossBeams) return;
+                if (windowBase.y < newBeamLeft.transform.TransformPoint(new Vector3(0.0f, 0.0f, 0.5f)).y) return;
+
+                BuildingPart buildingPart = transform.root.gameObject.GetComponent<BuildingPart>();
+                DeletesIfAskedNicely crossBeam = Instantiate(buildingPart.simpleBeam);
+                crossBeam.SetOtherMesh();
+
+                crossBeam.transform.localScale = new Vector3(0.3f, 0.75f, Mathf.Abs(horizontalMax - horizontalMin) - 0.04f);
+
+                crossBeam.transform.SetParent(buildingPart.beamStorage.transform, false);
+                Vector3 xzPosition = Vector3.Lerp(newBeamLeft.transform.position, transform.position, 0.5f);
+                crossBeam.transform.position = new Vector3(xzPosition.x, windowBase.y, xzPosition.z);
+                crossBeam.transform.rotation = transform.rotation * Quaternion.Euler(90.0f, 0.0f, 0.0f);
+
+                CrossBeam(
+                    buildingPart, 
+                    crossBeam.transform.TransformPoint(new Vector3(0.0f, 0.0f, 0.5f)), 
+                    newBeamLeft.transform.TransformPoint(new Vector3(0.0f, 0.0f, 0.5f)),
+                    0.3f
+                );
+
+                CrossBeam(
+                    buildingPart, 
+                    crossBeam.transform.TransformPoint(new Vector3(0.0f, 0.0f, -0.5f)), 
+                    transform.TransformPoint(new Vector3(0.0f, 0.0f, 0.5f)),
+                    0.25f
+                );
+            }
+        }
     }
 
     public void ResizeBottom(float p)
@@ -51,5 +138,28 @@ public class SubBeam : MonoBehaviour
         Vector3 new_point = transform.TransformPoint(new Vector3(0.0f, p, 0.0f));
         transform.Translate(new_point - transform.position, Space.World);
         wasMovedByCollision = true;
+    }
+
+    private SubBeam CopyBeam(GameObject parentObject)
+    {
+        GameObject newBeamObject = Instantiate(parentObject);
+        SubBeam newBeam = newBeamObject.GetComponent<SubBeam>();
+        newBeamObject.transform.SetParent(parentObject.transform.parent, false);
+
+        return newBeam;
+    }
+
+    void CrossBeam(BuildingPart buildingPart, Vector3 start, Vector3 end, float xScale)
+    {
+        if (start.y < end.y) return;
+
+        DeletesIfAskedNicely crossBeam = Instantiate(buildingPart.simpleBeam);
+        crossBeam.SetOtherMesh();
+
+        crossBeam.transform.localScale = new Vector3(xScale, 0.6f, Vector3.Distance(start, end));
+
+        crossBeam.transform.SetParent(buildingPart.beamStorage.transform, false);
+        crossBeam.transform.position = Vector3.Lerp(start, end, 0.5f);
+        crossBeam.transform.LookAt(start);
     }
 }

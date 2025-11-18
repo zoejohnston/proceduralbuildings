@@ -6,19 +6,29 @@ using UnityEngine;
 public class Shingle : MonoBehaviour
 {
     private bool delete = false;
+
     public Mesh rightCornerMesh;
     public Mesh leftCornerMesh;
-    // Start is called before the first frame update
-    void Start()
-    {
 
-    }
+    public List<Vector3> horizontalMins = new List<Vector3>();
+    public List<Vector3> horizontalMaxes = new List<Vector3>();
+    public int collisionCount = 0;
 
     // Update is called once per frame
     void Update()
     {
-        if (delete)
-        {
+        for (int i = 0; i < collisionCount; i++) {
+            float horizontalMin = transform.InverseTransformPoint(horizontalMins[i]).x;
+            float horizontalMax = transform.InverseTransformPoint(horizontalMaxes[i]).x;
+
+            HandleShingleCollisions(horizontalMin, horizontalMax);
+        }
+
+        horizontalMins = new List<Vector3>();
+        horizontalMaxes = new List<Vector3>();
+        collisionCount = 0;
+
+        if (delete) {
             DestroyImmediate(gameObject);
         }
     }
@@ -27,6 +37,13 @@ public class Shingle : MonoBehaviour
     {
         delete = true;
         gameObject.GetComponent<MeshRenderer>().enabled = false;
+    }
+
+    public void QueueShingleCollisions(Vector3 horizontalMin, Vector3 horizontalMax)
+    {
+        horizontalMins.Add(horizontalMin);
+        horizontalMaxes.Add(horizontalMax);
+        collisionCount++;
     }
 
     public void SwitchToLeftCornerMesh()
@@ -39,6 +56,19 @@ public class Shingle : MonoBehaviour
     {
         MeshFilter meshFilter = GetComponent<MeshFilter>();
         meshFilter.mesh = rightCornerMesh;
+    }
+
+    private void HandleShingleCollisions(float horizontalMin, float horizontalMax)
+    {
+        if (horizontalMax > horizontalMin) {
+            if (horizontalMin < -0.5f && 0.5f < horizontalMax) { DeletePls(); }
+            else if (horizontalMin < -0.5f) { ResizeRight(horizontalMax); }
+            else if (0.5f < horizontalMax) { ResizeLeft(horizontalMin); }
+        } else {
+            if (horizontalMin > 0.5f && -0.5f > horizontalMax) { DeletePls(); } 
+            else if (horizontalMin > 0.5f) { ResizeLeft(horizontalMax); }
+            else if (-0.5f > horizontalMax) { ResizeRight(horizontalMin); }
+        }
     }
 
     public void ResizeLeft(float p)

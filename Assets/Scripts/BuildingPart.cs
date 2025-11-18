@@ -305,14 +305,12 @@ public class BuildingPart : MonoBehaviour
                     newBrick.transform.Translate(new Vector3(0.0f, heightDisplacement, 0.0f), Space.World);
                 }*/
 
-                newBrick.EnableCollisions();
-
                 upTo += newWidth;
             }
         }
     }
 
-    private void DistanceToGround(){
+    private void DistanceToGround() {
 
     }
 
@@ -427,7 +425,7 @@ public class BuildingPart : MonoBehaviour
 
         float lengthOfShingle = 1.2f * Vector3.Distance(previous, newShingle.transform.position);
 
-        if (xShift < 0.71f) {
+        if (yShift < roofHeight) {
             DeletesIfAskedNicely newBeam = Instantiate(simpleBeam);
             newBeam.transform.position = newShingle.transform.position;
             newBeam.transform.LookAt(previous, Vector3.up);
@@ -437,9 +435,8 @@ public class BuildingPart : MonoBehaviour
             newBeam.transform.SetParent(beamStorage.transform, false);
 
             Beam newBeam2 = Instantiate(beam);
-            //newBeam2.SetOtherMesh();
             newBeam2.transform.position = newShingle.transform.position;
-            newBeam2.transform.Translate(new Vector3(-side * 0.01f, -0.03f, -which * 0.4f), Space.Self);
+            newBeam2.transform.Translate(new Vector3(-side * 0.01f, -0.03f, -which * 0.375f), Space.Self);
             newBeam2.transform.localScale = new Vector3(0.7f, 0.7f, 0.8f);
             newBeam2.transform.SetParent(beamStorage.transform, false);
         }
@@ -532,14 +529,14 @@ public class BuildingPart : MonoBehaviour
         Vector3 translateAmount = new Vector3(0.0f, -0.075f, 0.0f);
         Vector3 axis = flip ? new Vector3(1.0f, 0.0f, 0.0f) : new Vector3(0.0f, 0.0f, 1.0f);
 
+        float zNoise = 0.025f * (Mathf.PerlinNoise(xShift / 0.7f, index / 0.8f) - 0.5f);
+        float yNoise = -0.05f * (Mathf.PerlinNoise(xShift / 0.3f, index / 0.97f) - 0.5f);
+
         newShingle.transform.Translate(translateAmount);
         newShingle.transform.RotateAround(newShingle.transform.position - translateAmount, axis, angle);
         newShingle.transform.RotateAround(newShingle.transform.position, axis, tilt);
-        newShingle.transform.localScale = new Vector3(widthOfShingle, 1.5f * lengthOfShingle, 0.25f);
-
-        float zNoise = 0.025f * (Mathf.PerlinNoise(xShift / 0.7f, index / 0.8f) - 0.5f);
-        float yNoise = -0.05f * (Mathf.PerlinNoise(xShift / 0.3f, index / 0.97f) - 0.5f);
-        newShingle.transform.Translate(new Vector3(0.0f, yNoise, zNoise));
+        newShingle.transform.localScale = new Vector3(widthOfShingle, (1.5f * lengthOfShingle) - yNoise, 0.25f);
+        newShingle.transform.Translate(new Vector3(0.0f, 0.5f * yNoise, zNoise));
 
         newShingle.transform.SetParent(shingleStorage.transform, false);
     }
@@ -913,15 +910,16 @@ public class BuildingPart : MonoBehaviour
                 transform.localScale = new Vector3(transform.localScale.x, 1.0f, transform.localScale.z);
             if (transform.localScale.z != 1.0f)
                 transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, 1.0f);
+            
+            transform.hasChanged = false;
         }
 
         if (scaleUpdated)
-        {
+        {   
             Rebuild();
         }
         else if (updatedLastFrame)
-        {
-            HandleInteractions();
+        {   
             HandleInteractions();
         }
     }
