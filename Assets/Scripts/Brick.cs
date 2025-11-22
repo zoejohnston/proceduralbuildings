@@ -42,7 +42,7 @@ public class Brick : MonoBehaviour
         verticalMaxes = new List<Vector3>();
         collisionCount = 0;
 
-        if (splitNoise > 0.55f && !shouldntSplit) {
+        if (splitNoise > 0.55f && (!shouldntSplit) && (!delete)) {
             Split(splitLocation);
             shouldntSplit = true;
         }

@@ -7,6 +7,7 @@ public class SubBeam : MonoBehaviour
 {
     private bool delete = false;
     public bool wasMovedByCollision = false;
+    public bool isRoofBeam = false;
 
     public List<Vector3> horizontalMins = new List<Vector3>();
     public List<Vector3> horizontalMaxes = new List<Vector3>();
@@ -42,7 +43,7 @@ public class SubBeam : MonoBehaviour
         verticalMaxes = new List<Vector3>();
         collisionCount = 0;
 
-        TryAddCrossBeams();
+        if (!isRoofBeam) TryAddCrossBeams();
 
         if (delete) {
             DestroyImmediate(gameObject);
@@ -113,13 +114,16 @@ public class SubBeam : MonoBehaviour
 
     public void DeletePls()
     {
+        if (rightCrossBeam != null) rightCrossBeam.DeletePls();
+        if (leftCrossBeam != null) leftCrossBeam.DeletePls();
+        
         delete = true;
         gameObject.transform.GetChild(1).gameObject.GetComponent<MeshRenderer>().enabled = false;
     }
 
     void HandleBeamCollisions(float horizontalMin, float horizontalMax, float verticalMin, float verticalMax, Vector3 windowBase, bool doCrossBeams)
     {
-        if (wasMovedByCollision) {
+        if (wasMovedByCollision || isRoofBeam) {
             if (-0.025f > horizontalMin && 0.025f < horizontalMax) {
                 if (verticalMax < -0.5f && verticalMin > 0.5f) { 
                     DeletePls(); 
@@ -203,10 +207,10 @@ public class SubBeam : MonoBehaviour
 
         Vector3 startPoint = transform.TransformPoint(new Vector3(-0.025f, 0.0f, -0.5f));
         Vector3 endPoint = transform.TransformPoint(new Vector3(-0.025f, 0.0f, 0.5f));
-        LayerMask mask = LayerMask.GetMask("Windows");
+        LayerMask mask = LayerMask.GetMask("Windows", "Shingles");
         
         if (Physics.Raycast(startPoint, endPoint - startPoint, out hit, Vector3.Distance(startPoint, endPoint), mask)) {
-            ResizeBottom(transform.InverseTransformPoint(hit.point).z);
+            if (!isRoofBeam) ResizeBottom(transform.InverseTransformPoint(hit.point).z);
             shouldGetCrossBeams = false;
         }
 

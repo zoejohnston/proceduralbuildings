@@ -64,80 +64,7 @@ public class BuildingPartColliders : MonoBehaviour
         return false;
     }
 
-    /*void InitWallColliders()
-    {
-        if (wallParent.transform.childCount > 0) DestroyImmediate(wallParent);
-        
-        if (wallParent == null) {
-            wallParent = new GameObject("Walls");
-            wallParent.transform.SetParent(transform, false);
-        }
-
-        walls = new GameObject[4];
-        wallTops = new GameObject[2];
-        wallTopMesh = Instantiate(wallMesh);
-
-        for (int i = 0; i < 4; i++) {
-            walls[i] = new GameObject("Wall", typeof(BoxCollider), typeof(WallCollider));
-            walls[i].transform.SetParent(wallParent.transform, false);
-        }
-
-        for (int i = 0; i < 2; i++)
-        {
-            wallTops[i] = new GameObject("WallTop", typeof(MeshCollider), typeof(WallCollider));
-            wallTops[i].transform.SetParent(wallParent.transform, false);
-            wallTops[i].GetComponent<MeshCollider>().sharedMesh = wallTopMesh;
-        }
-
-        WallCollider wallCollider0 = walls[0].GetComponent<WallCollider>();
-        wallCollider0.normal = Vector3.forward;
-        WallCollider wallCollider1 = walls[1].GetComponent<WallCollider>();
-        wallCollider1.normal = Vector3.right;
-        WallCollider wallCollider2 = walls[2].GetComponent<WallCollider>();
-        wallCollider2.normal = Vector3.back;
-        WallCollider wallCollider3 = walls[3].GetComponent<WallCollider>();
-        wallCollider3.normal = Vector3.left;
-
-        WallCollider wallTopCollider0 = wallTops[0].GetComponent<WallCollider>();
-        wallTopCollider0.normal = Vector3.forward;
-        wallTopCollider0.connectedWall = wallCollider0;
-        wallCollider0.connectedWall = wallTopCollider0;
-        WallCollider wallTopCollider1 = wallTops[1].GetComponent<WallCollider>();
-        wallTopCollider1.normal = Vector3.back;
-        wallTopCollider1.connectedWall = wallCollider2;
-        wallCollider2.connectedWall = wallTopCollider1;
-    }
-
-    void InitRoofColliders()
-    {
-        if (roofParent.transform.childCount > 0) DestroyImmediate(roofParent);
-        
-        if (roofParent == null) {
-            roofParent = new GameObject("Roof");
-            roofParent.transform.SetParent(transform, false);
-        }
-        
-        ridgeRoofs = new GameObject[2];
-        roofs = new GameObject[2];
-
-        ridgeRoofMeshInternal = Instantiate(roofRidgeMesh);
-        roofMeshInternal = Instantiate(roofMesh);
-
-        for (int i = 0; i < 2; i++)
-        {
-            ridgeRoofs[i] = new GameObject("RidgeRoof", typeof(MeshCollider));
-            ridgeRoofs[i].transform.SetParent(roofParent.transform, false);
-            ridgeRoofs[i].GetComponent<MeshCollider>().sharedMesh = ridgeRoofMeshInternal;
-        }
-        
-        for (int i = 0; i < 2; i++) {
-            roofs[i] = new GameObject("Roof", typeof(MeshCollider));
-            roofs[i].transform.SetParent(roofParent.transform, false);
-            roofs[i].GetComponent<MeshCollider>().sharedMesh = roofMeshInternal;
-        }
-    }*/
-
-    void UpdateWallTopVertices(BuildingPart buildingPart)
+    private void UpdateWallTopVertices(BuildingPart buildingPart)
     {
         Vector3[] vertices = wallMesh.vertices;
 
@@ -162,7 +89,7 @@ public class BuildingPartColliders : MonoBehaviour
         wallTops[1].GetComponent<MeshCollider>().sharedMesh = wallTopMesh;
     }
     
-    void UpdateRidgeRoofVertices(BuildingPart buildingPart)
+    private void UpdateRidgeRoofVertices(BuildingPart buildingPart)
     {
         Vector3[] vertices = roofRidgeMesh.vertices;
 
@@ -189,7 +116,7 @@ public class BuildingPartColliders : MonoBehaviour
         ridgeRoofs[1].GetComponent<MeshCollider>().sharedMesh = ridgeRoofMeshInternal;
     }
     
-    void UpdateRoofVertices(BuildingPart buildingPart)
+    private void UpdateRoofVertices(BuildingPart buildingPart)
     {
         Vector3[] vertices = roofMesh.vertices;
 
@@ -209,7 +136,7 @@ public class BuildingPartColliders : MonoBehaviour
         roofs[1].GetComponent<MeshCollider>().sharedMesh = roofMeshInternal;
     }
 
-    void UpdateColliders()
+    private void UpdateColliders()
     {
         BuildingPart buildingPart = transform.parent.gameObject.GetComponent<BuildingPart>();
         Vector3 buildingPartScale = buildingPart.GetScale();
@@ -294,8 +221,6 @@ public class BuildingPartColliders : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        //if (walls == null || wallTops == null) InitWallColliders();
-        //if (roofs == null || ridgeRoofs == null) InitRoofColliders();
         UpdateColliders();
     }
 

@@ -1,9 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions.Must;
+using System;
 
 [ExecuteInEditMode]
+[SelectionBase]
 public class Window : MonoBehaviour
 {
     public BuildingPart snappedTo;

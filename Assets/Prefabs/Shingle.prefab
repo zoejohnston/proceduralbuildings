@@ -99,6 +99,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rightCornerMesh: {fileID: 8046105505283780666, guid: 1b20f352a2d992640a572097989eae83, type: 3}
   leftCornerMesh: {fileID: -7720874992443272960, guid: afe12c9f836e14d4ba3ab5326dd38f88, type: 3}
+  horizontalMins: []
+  horizontalMaxes: []
+  collisionCount: 0
 --- !u!1 &7859483454947967695
 GameObject:
   m_ObjectHideFlags: 0
@@ -111,7 +114,7 @@ GameObject:
   - component: {fileID: 6826818322148685282}
   - component: {fileID: 5611257222114719765}
   - component: {fileID: 1475449237898301869}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Collider
   m_TagString: Untagged
   m_Icon: {fileID: 0}

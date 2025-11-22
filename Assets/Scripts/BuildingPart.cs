@@ -245,17 +245,17 @@ public class BuildingPart : MonoBehaviour
         }
     }
 
-    void SetNoise(float[,] noise, int numBricksTall, int numBricksWide)
+    void SetNoise(float[,] noise, int numBricksTall, int numBricksWide, int otherInput)
     {
         for (int i = 0; i < numBricksTall; i++)
         {
             float sum = 0.0f;
-            noise[i, 0] = Mathf.PerlinNoise(i / 0.7f, 0 / 0.7f) - 0.5f;
+            noise[i, 0] = Mathf.PerlinNoise((i + otherInput) / 0.7f, 0 / 0.7f) - 0.5f;
             sum += noise[i, 0];
 
             for (int j = 1; j < numBricksWide - 1; j++)
             {
-                noise[i, j] = Mathf.PerlinNoise(i / 0.7f, j / 0.7f) - 0.5f;
+                noise[i, j] = Mathf.PerlinNoise((i + otherInput) / 0.7f, j / 0.7f) - 0.5f;
                 sum += noise[i, j];
             }
 
@@ -355,7 +355,7 @@ public class BuildingPart : MonoBehaviour
         float widthOfBrick = width / numBricksWide;
 
         float[,] noise = new float[numBricksTall, numBricksWide];
-        SetNoise(noise, numBricksTall, numBricksWide);
+        SetNoise(noise, numBricksTall, numBricksWide, 0);
 
         BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 90.0f, shrink / 2.0f);
         BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 270.0f, shrink / 2.0f);
@@ -365,7 +365,7 @@ public class BuildingPart : MonoBehaviour
         widthOfBrick = width / numBricksWide;
 
         noise = new float[numBricksTall, numBricksWide];
-        SetNoise(noise, numBricksTall, numBricksWide);
+        SetNoise(noise, numBricksTall, numBricksWide, 0);
 
         BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 0.0f, shrink / 2.0f);
         BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 180.0f, shrink / 2.0f);
@@ -735,7 +735,7 @@ public class BuildingPart : MonoBehaviour
             }
 
             float[,] noise = new float[1, numBricksWide];
-            SetNoise(noise, 1, numBricksWide);
+            SetNoise(noise, 1, numBricksWide, i);
 
             float startPosition = distance / 2.0f;
             float upTo = 0.0f;
@@ -803,6 +803,21 @@ public class BuildingPart : MonoBehaviour
                 newBeam.transform.localScale = new Vector3(0.4f, 0.75f, heightOfBeam);
                 newBeam.transform.SetParent(beamStorage.transform, false);
             }
+        }
+
+        if (flip && ridgeLength <= 0.2f)
+        {
+            SubBeam newBeam = Instantiate(subBeam);
+            newBeam.isRoofBeam = true;
+            newBeam.transform.position = new Vector3(
+                0.0f,
+                (numBeamsTall * heightOfBeam) + (roofHeight / 2.0f) - (innerScale.y / 2.0f),
+                side * ((depth / 2.0f) + 0.04f)
+            );
+            float yRotation = flip ? side * 90.0f : (side > 0.0f ? 0.0f : 180.0f);
+            newBeam.transform.Rotate(new Vector3(90.0f, 0.0f, yRotation));
+            newBeam.transform.localScale = new Vector3(0.4f, 0.75f, roofHeight);
+            newBeam.transform.SetParent(beamStorage.transform, false);
         }
     }
 
