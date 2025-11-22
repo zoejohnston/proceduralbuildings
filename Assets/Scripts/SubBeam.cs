@@ -14,6 +14,9 @@ public class SubBeam : MonoBehaviour
     public List<Vector3> verticalMaxes = new List<Vector3>();
     public int collisionCount = 0;
 
+    public DeletesIfAskedNicely rightCrossBeam;
+    public DeletesIfAskedNicely leftCrossBeam;
+
     // Update is called once per frame
     void Update()
     {
@@ -39,8 +42,63 @@ public class SubBeam : MonoBehaviour
         verticalMaxes = new List<Vector3>();
         collisionCount = 0;
 
+        TryAddCrossBeams();
+
         if (delete) {
             DestroyImmediate(gameObject);
+        }
+    }
+
+    public void TryAddCrossBeams()
+    {
+        if (rightCrossBeam != null) return;
+        RaycastHit hit;
+        LayerMask mask = LayerMask.GetMask("Windows");
+        
+        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.up), out hit, 0.5f)) { 
+            Transform parentTransform = hit.collider.gameObject.transform.parent;
+
+            if (parentTransform.gameObject.TryGetComponent(out Beam beam))
+            {
+                BuildingPart buildingPart = transform.root.gameObject.GetComponent<BuildingPart>();
+                float y = transform.TransformPoint(new Vector3(0.0f, 0.0f, -0.5f)).y;
+
+                Vector3 start = new Vector3(parentTransform.position.x, y, parentTransform.position.z);
+                Vector3 end = transform.TransformPoint(new Vector3(0.0f, 0.0f, 0.5f));
+                Vector3 startSlightlyBack = transform.TransformPoint(transform.InverseTransformPoint(start) - (0.01f * Vector3.left));
+
+                Vector3 rayDirection = transform.InverseTransformDirection(end - start);
+                rayDirection.x = 0.0f;
+
+                if (Physics.Raycast(startSlightlyBack, transform.TransformDirection(rayDirection), out hit, Vector3.Distance(start, end), mask)) {
+                } else {
+                    rightCrossBeam = CrossBeam(buildingPart, start, end, 0.3f);
+                }
+            }
+        }
+
+        if (leftCrossBeam != null) return;
+        
+        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out hit, 0.5f)) { 
+            Transform parentTransform = hit.collider.gameObject.transform.parent;
+
+            if (parentTransform.gameObject.TryGetComponent(out Beam beam))
+            {
+                BuildingPart buildingPart = transform.root.gameObject.GetComponent<BuildingPart>();
+                float y = transform.TransformPoint(new Vector3(0.0f, 0.0f, -0.5f)).y;
+
+                Vector3 start = new Vector3(parentTransform.position.x, y, parentTransform.position.z);
+                Vector3 end = transform.TransformPoint(new Vector3(0.0f, 0.0f, 0.5f));
+                Vector3 startSlightlyBack = transform.TransformPoint(transform.InverseTransformPoint(start) - (0.01f * Vector3.left));
+
+                Vector3 rayDirection = transform.InverseTransformDirection(end - start);
+                rayDirection.x = 0.0f;
+
+                if (Physics.Raycast(startSlightlyBack, transform.TransformDirection(rayDirection), out hit, Vector3.Distance(start, end), mask)) {
+                } else {
+                    leftCrossBeam = CrossBeam(buildingPart, start, end, 0.3f);
+                }
+            }
         }
     }
 
@@ -81,8 +139,10 @@ public class SubBeam : MonoBehaviour
         } else {
             if (-0.025f > horizontalMin && 0.025f < horizontalMax) {
                 SubBeam newBeamLeft = CopyBeam(gameObject);
-                newBeamLeft.MoveTo(horizontalMax + 0.02f);
-                MoveTo(horizontalMin - 0.02f);
+                bool newBeamHasNoCollisions = newBeamLeft.MoveTo(horizontalMax + 0.02f);
+                bool beamHasNoCollisions = MoveTo(horizontalMin - 0.02f);
+
+                doCrossBeams = doCrossBeams && newBeamHasNoCollisions && beamHasNoCollisions;
 
                 if (!doCrossBeams) return;
                 if (windowBase.y < newBeamLeft.transform.TransformPoint(new Vector3(0.0f, 0.0f, 0.5f)).y) return;
@@ -133,11 +193,32 @@ public class SubBeam : MonoBehaviour
         transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, multiplier * transform.localScale.z);
     }
 
-    public void MoveTo(float p)
+    public bool MoveTo(float p)
     {
+        RaycastHit hit;
         Vector3 new_point = transform.TransformPoint(new Vector3(0.0f, p, 0.0f));
         transform.Translate(new_point - transform.position, Space.World);
         wasMovedByCollision = true;
+        bool shouldGetCrossBeams = true;
+
+        Vector3 startPoint = transform.TransformPoint(new Vector3(-0.025f, 0.0f, -0.5f));
+        Vector3 endPoint = transform.TransformPoint(new Vector3(-0.025f, 0.0f, 0.5f));
+        LayerMask mask = LayerMask.GetMask("Windows");
+        
+        if (Physics.Raycast(startPoint, endPoint - startPoint, out hit, Vector3.Distance(startPoint, endPoint), mask)) {
+            ResizeBottom(transform.InverseTransformPoint(hit.point).z);
+            shouldGetCrossBeams = false;
+        }
+
+        startPoint = transform.TransformPoint(new Vector3(-0.025f, 0.0f, 0.5f));
+        endPoint = transform.TransformPoint(new Vector3(-0.025f, 0.0f, -0.5f));
+        
+        if (Physics.Raycast(startPoint, endPoint - startPoint, out hit, Vector3.Distance(startPoint, endPoint), mask)) {
+            ResizeTop(transform.InverseTransformPoint(hit.point).z);
+            shouldGetCrossBeams = false;
+        }
+
+        return shouldGetCrossBeams;
     }
 
     private SubBeam CopyBeam(GameObject parentObject)
@@ -149,9 +230,9 @@ public class SubBeam : MonoBehaviour
         return newBeam;
     }
 
-    void CrossBeam(BuildingPart buildingPart, Vector3 start, Vector3 end, float xScale)
+    DeletesIfAskedNicely CrossBeam(BuildingPart buildingPart, Vector3 start, Vector3 end, float xScale)
     {
-        if (start.y < end.y) return;
+        if (start.y < end.y) return null;
 
         DeletesIfAskedNicely crossBeam = Instantiate(buildingPart.simpleBeam);
         crossBeam.SetOtherMesh();
@@ -161,5 +242,6 @@ public class SubBeam : MonoBehaviour
         crossBeam.transform.SetParent(buildingPart.beamStorage.transform, false);
         crossBeam.transform.position = Vector3.Lerp(start, end, 0.5f);
         crossBeam.transform.LookAt(start);
+        return crossBeam;
     }
 }

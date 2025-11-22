@@ -64,7 +64,7 @@ public class BuildingPartColliders : MonoBehaviour
         return false;
     }
 
-    void InitWallColliders()
+    /*void InitWallColliders()
     {
         if (wallParent.transform.childCount > 0) DestroyImmediate(wallParent);
         
@@ -135,7 +135,7 @@ public class BuildingPartColliders : MonoBehaviour
             roofs[i].transform.SetParent(roofParent.transform, false);
             roofs[i].GetComponent<MeshCollider>().sharedMesh = roofMeshInternal;
         }
-    }
+    }*/
 
     void UpdateWallTopVertices(BuildingPart buildingPart)
     {
@@ -294,8 +294,8 @@ public class BuildingPartColliders : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        if (walls == null || wallTops == null) InitWallColliders();
-        if (roofs == null || ridgeRoofs == null) InitRoofColliders();
+        //if (walls == null || wallTops == null) InitWallColliders();
+        //if (roofs == null || ridgeRoofs == null) InitRoofColliders();
         UpdateColliders();
     }
 

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using Unity.VisualScripting;
 
 [ExecuteInEditMode]
 public class BuildingPart : MonoBehaviour
@@ -132,33 +133,33 @@ public class BuildingPart : MonoBehaviour
         {
             GameObject childObject = childTransform.gameObject;
 
-            if (childObject.TryGetComponent<Quoin>(out Quoin quoin)) quoin.DeletePls();
-            if (childObject.TryGetComponent<Brick>(out Brick brick)) brick.DeletePls();
+            if (childObject.TryGetComponent(out Quoin quoinToDelete)) quoinToDelete.DeletePls();
+            if (childObject.TryGetComponent(out Brick brickToDelete)) brickToDelete.DeletePls();
         }
 
         foreach (Transform childTransform in shingleStorage.transform)
         {
             GameObject childObject = childTransform.gameObject;
 
-            if (childObject.TryGetComponent<Shingle>(out Shingle shingle)) shingle.DeletePls();
-            if (childObject.TryGetComponent<RidgeShingle>(out RidgeShingle ridgeShingle)) ridgeShingle.DeletePls();
-            if (childObject.TryGetComponent<Brick>(out Brick brick)) brick.DeletePls();
+            if (childObject.TryGetComponent(out Shingle shingleToDelete)) shingleToDelete.DeletePls();
+            if (childObject.TryGetComponent(out RidgeShingle ridgeShingleToDelete)) ridgeShingleToDelete.DeletePls();
+            if (childObject.TryGetComponent(out Brick brickToDelete)) brickToDelete.DeletePls();
         }
 
         foreach (Transform childTransform in windowStorage.transform)
         {
             GameObject childObject = childTransform.gameObject;
 
-            if (childObject.TryGetComponent<Window>(out Window window)) window.UpdatePosition();
+            if (childObject.TryGetComponent(out Window window)) window.UpdatePosition();
         }
 
         foreach (Transform childTransform in beamStorage.transform)
         {
             GameObject childObject = childTransform.gameObject;
 
-            if (childObject.TryGetComponent<DeletesIfAskedNicely>(out DeletesIfAskedNicely pls)) pls.DeletePls();
-            if (childObject.TryGetComponent<Beam>(out Beam beam)) beam.DeletePls();
-            if (childObject.TryGetComponent<SubBeam>(out SubBeam subBeam)) subBeam.DeletePls();
+            if (childObject.TryGetComponent(out DeletesIfAskedNicely plsToDelete)) plsToDelete.DeletePls();
+            if (childObject.TryGetComponent(out Beam beamToDelete)) beamToDelete.DeletePls();
+            if (childObject.TryGetComponent(out SubBeam subBeamToDelete)) subBeamToDelete.DeletePls();
         }
 
         InitBricks();
@@ -176,19 +177,35 @@ public class BuildingPart : MonoBehaviour
         Physics.simulationMode = SimulationMode.FixedUpdate;
 
         updatedLastFrame = false;
+    }
 
-        // Some post collision stuff
-        foreach (Transform childTransform in brickStorage.transform)
-        {
-            GameObject childObject = childTransform.gameObject;
+    // Start is called before the first frame update
+    void Start()
+    {
+        InitBricks();
+        InitRoof();
+        if (woodFramed) InitBeams();
+    }
 
-            if (childObject.TryGetComponent<Brick>(out Brick brick))
-            {
-                if (brick.splitNoise > 0.65f && !brick.shouldntSplit)
-                {
-                    brick.Split(brick.splitLocation);
-                }
-            }
+    // Update is called once per frame
+    void Update()
+    {
+        // Actual scale should never change
+        if (transform.hasChanged) {
+            if (transform.localScale.x != 1.0f)
+                transform.localScale = new Vector3(1.0f, transform.localScale.y, transform.localScale.z);
+            if (transform.localScale.y != 1.0f)
+                transform.localScale = new Vector3(transform.localScale.x, 1.0f, transform.localScale.z);
+            if (transform.localScale.z != 1.0f)
+                transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, 1.0f);
+            
+            transform.hasChanged = false;
+        }
+
+        if (scaleUpdated) {   
+            Rebuild();
+        } else if (updatedLastFrame) {   
+            HandleInteractions();
         }
     }
 
@@ -197,13 +214,16 @@ public class BuildingPart : MonoBehaviour
     void InitQuoins(float x, float y, float z)
     {
         float epsilon = 0.000001f;
+        float widthOfBrick = 0.15f;
+        float lenthOfBrick = 0.25f;
         y += epsilon;
+
+        float positionOnRoof = 1.0f - (((innerScale.x / 2.0f) - 0.05f) / (innerScale.x / 2.0f));
+        float addedHeight = Mathf.Pow(positionOnRoof, roofCurve) * roofHeight;
+        y += ridgeLength > 0.2f ? 0.0f : addedHeight;
 
         int numBricksTall = Mathf.RoundToInt(y / 0.2f);
         float heightOfBrick = y / numBricksTall;
-
-        float widthOfBrick = 0.15f;
-        float lenthOfBrick = 0.25f;
 
         for (int i = 0; i < numBricksTall; i++)
         {
@@ -666,15 +686,17 @@ public class BuildingPart : MonoBehaviour
     void MoreQuoins(float x, float y, float z)
     {
         Quoin new_quoin = Instantiate(quoin);
+        float positionOnRoof = 1.0f - (((innerScale.x / 2.0f) - 0.05f) / (innerScale.x / 2.0f));
+        float addedHeight = Mathf.Pow(positionOnRoof, roofCurve) * roofHeight;
 
         new_quoin.transform.localPosition = new Vector3(
             x * ((innerScale.x / 2.0f) - (0.15f / 2.0f) - 0.05f),
-            (innerScale.y / 2.0f) + (0.175f / 2.0f),
-            z * ((innerScale.z / 2.0f) - (0.15f / 2.0f) - 0.05f)
+            (innerScale.y / 2.0f) + (0.175f / 2.0f) + addedHeight,
+            z * ((innerScale.z / 2.0f) - (0.125f / 2.0f) - 0.05f)
         );
 
             //new_quoin.transform.RotateAround(transform.position, Vector3.up, transform.localEulerAngles.y);
-            new_quoin.transform.localScale = new Vector3(0.15f, 0.175f, 0.15f);
+            new_quoin.transform.localScale = new Vector3(0.15f, 0.175f, 0.125f);
             new_quoin.transform.SetParent(brickStorage.transform, false);
     }
     
@@ -820,15 +842,18 @@ public class BuildingPart : MonoBehaviour
             for (int j = -1; j < 2; j += 2)
             {
                 Beam newBeam = Instantiate(beam);
+                float positionOnRoof = 1.0f - (((depth / 2.0f) + 0.05f) / (innerScale.x / 2.0f));
+                float addedHeight = Mathf.Pow(positionOnRoof, roofCurve) * roofHeight;
+                if (ridgeLength > 0.2f) addedHeight = 0.0f;
 
                 newBeam.transform.position = new Vector3(
                     i * ((depth / 2.0f) + 0.025f),
-                    0.0f,
+                    addedHeight / 2.0f,
                     j * ((width / 2.0f) + 0.025f)
                 );
 
                 newBeam.transform.Rotate(new Vector3(90.0f, 0.0f, 0.0f));
-                newBeam.transform.localScale = new Vector3(1.2f, 1.2f, height);
+                newBeam.transform.localScale = new Vector3(1.2f, 1.2f, height + addedHeight);
                 newBeam.transform.SetParent(beamStorage.transform, false);
             }
         }
@@ -889,38 +914,6 @@ public class BuildingPart : MonoBehaviour
                 MoreQuoins(-1.0f, innerScale.y, 1.0f);
                 MoreQuoins(-1.0f, innerScale.y, -1.0f);
             }
-        }
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        InitBricks();
-        InitRoof();
-        if (woodFramed) InitBeams();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (transform.hasChanged) {
-            if (transform.localScale.x != 1.0f)
-                transform.localScale = new Vector3(1.0f, transform.localScale.y, transform.localScale.z);
-            if (transform.localScale.y != 1.0f)
-                transform.localScale = new Vector3(transform.localScale.x, 1.0f, transform.localScale.z);
-            if (transform.localScale.z != 1.0f)
-                transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, 1.0f);
-            
-            transform.hasChanged = false;
-        }
-
-        if (scaleUpdated)
-        {   
-            Rebuild();
-        }
-        else if (updatedLastFrame)
-        {   
-            HandleInteractions();
         }
     }
 }

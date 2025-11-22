@@ -48,6 +48,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ddd188a6f5d5fe4f8c209b675c5a0ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  snappedTo: {fileID: 0}
   wall: {fileID: 0}
   shingle: {fileID: 4697305777344811825, guid: 956efe9613f29814e88e74c02b1e070a, type: 3}
   ridgeShingle: {fileID: 4953590821711047847, guid: 6db3d73f980036c41a819af700cefc4e, type: 3}
@@ -261,7 +262,7 @@ GameObject:
   - component: {fileID: 9035970622511411942}
   - component: {fileID: 1657739073136534255}
   - component: {fileID: 2632078979550964950}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Collider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
