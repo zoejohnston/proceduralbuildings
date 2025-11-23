@@ -34,21 +34,32 @@ public class BuildingPart : MonoBehaviour
     public GameObject windowStorage;
 
     [Header("Roof")]
+
+    // A value describing the curve of the roof.
+    // The height of the roof will be equal to Mathf.Pow(x, roofCurve) * roofHeight, where x is a value between 0 and 1.
     [Range(0.5f, 1.75f)]
     public float roofCurve = 1.0f;
 
+    // The height of the roof, measured from the top of this building part's walls to the ridge at the top of its roof.
     [Range(0.1f, 2.0f)]
     public float roofHeight = 2.0f;
 
+    // A value describing the length of the ridge at the top of the roof. The ridge becomes longer as this value decreases.
+    // A value of 0.2 defaults to a fully extended ridge.
     [Range(0.2f, 1.0f)]
     public float ridgeLength = 0.5f;
 
     [Header("Walls")]
+    // Walls are framed in wood if true. 
     public bool woodFramed = false;
     public bool plastered = false;
 
     /* Public functions */
 
+    /// <summary>
+    /// Called by the BuildingPart scaling tool to update the inner scaling of this building part.
+    /// </summary>
+    /// <param name="scaleDelta">The amount to modify the inner scaling by.</param>
     public void UpdateScale(Vector3 scaleDelta)
     {
         innerScale += scaleDelta;
@@ -57,24 +68,41 @@ public class BuildingPart : MonoBehaviour
         if (innerScale.y < Mathf.Epsilon) innerScale.y = Mathf.Epsilon;
         if (innerScale.z < Mathf.Epsilon) innerScale.z = Mathf.Epsilon;
 
-        if (innerScale.x > 10.0f) innerScale.x = 10.0f;
-        if (innerScale.y > 10.0f) innerScale.y = 10.0f;
-        if (innerScale.z > 10.0f) innerScale.z = 10.0f;
+        if (innerScale.x > 5.0f) innerScale.x = 5.0f;
+        if (innerScale.y > 5.0f) innerScale.y = 5.0f;
+        if (innerScale.z > 5.0f) innerScale.z = 5.0f;
+
+        if (innerScale.x < 0.5f) innerScale.x = 0.5f;
+        if (innerScale.y < 0.3f) innerScale.y = 0.3f;
+        if (innerScale.z < 0.8f) innerScale.z = 0.8f;
         
         scaleUpdated = true;
         transform.GetChild(0).localScale = innerScale;
     }
 
+    /// <summary>
+    /// Returns the inner scale of this building part.
+    /// </summary>
     public Vector3 GetScale()
     {
         return innerScale;
     }
 
+    /// <summary>
+    /// Calling function lets this building part know that it should rebuild itself next frame.
+    /// </summary>
     public void UpdateNextFrame()
     {
         scaleUpdated = true;
     }
 
+    /// <summary>
+    /// Returns the point at which a given dormer would attach to the roof.
+    /// </summary>
+    /// <param name="startPosition">The position of the top of the window.</param>
+    /// <param name="direction">A vector pointing from the window towards the center of the building part.</param>
+    /// <param name="flip">The sides of the roof parallel to the ridge of the roof are often at a different angle than 
+    /// those orthogonal to it. This parameter indicates if the window is up against the orthogonal portion.</param>
     public Vector3 GetDormerAttachPoint(Vector3 startPosition, Vector3 direction, bool flip)
     {
         float topOfWall = transform.position.y + (innerScale.y / 2.0f);
@@ -103,13 +131,19 @@ public class BuildingPart : MonoBehaviour
         return point;
     }
     
+    /// <summary>
+    /// Returns the height of the window at <c>position</c> above the wall.
+    /// </summary>
+    /// <param name="position">The position of the window.</param>
     public float GetDormerHeight(Vector3 position)
     {
         float topOfWall = transform.position.y + (innerScale.y / 2.0f);
         return position.y - topOfWall;
     }
 
-    //
+    /// <summary>
+    /// Prepares this building part for export and returns the resulting MeshFilters.
+    /// </summary>
     public MeshFilter[] PrepForExport()
     {
         Transform storageTransform = transform.Find("Storage");
@@ -120,12 +154,55 @@ public class BuildingPart : MonoBehaviour
         return exportPrep.Merge();
     }
 
-    /* Private functions */
+    /// <summary>
+    /// TODO.
+    /// </summary>
+    public void DistanceToGround() {
 
+    }
+
+    /* Called by Unity Runtime */
+
+    // Start is called before the first frame update.
+    void Start()
+    {
+        InitBricks();
+        InitRoof();
+        if (woodFramed) InitBeams();
+    }
+
+    // Update is called once per frame.
+    void Update()
+    {
+        // Actual scale should never change
+        if (transform.hasChanged) {
+            if (transform.localScale.x != 1.0f || transform.localScale.y != 1.0f || transform.localScale.z != 1.0f)
+                Debug.LogError("Please use the scale tool provided in the BuildingPart tool context!");
+
+            if (transform.localScale.x != 1.0f)
+                transform.localScale = new Vector3(1.0f, transform.localScale.y, transform.localScale.z);
+            if (transform.localScale.y != 1.0f)
+                transform.localScale = new Vector3(transform.localScale.x, 1.0f, transform.localScale.z);
+            if (transform.localScale.z != 1.0f)
+                transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, 1.0f);
+            
+            transform.hasChanged = false;
+        }
+
+        if (scaleUpdated) {   
+            Rebuild();
+        } else if (updatedLastFrame) {   
+            HandleInteractions();
+        }
+    }
+    
+    // OnValidate is called when the script is loaded or a value is changed in the inspector.
     private void OnValidate()
     {
         UpdateNextFrame();
     }
+
+    /* Private functions */
 
     void Rebuild()
     {
@@ -179,51 +256,27 @@ public class BuildingPart : MonoBehaviour
         updatedLastFrame = false;
     }
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        InitBricks();
-        InitRoof();
-        if (woodFramed) InitBeams();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        // Actual scale should never change
-        if (transform.hasChanged) {
-            if (transform.localScale.x != 1.0f)
-                transform.localScale = new Vector3(1.0f, transform.localScale.y, transform.localScale.z);
-            if (transform.localScale.y != 1.0f)
-                transform.localScale = new Vector3(transform.localScale.x, 1.0f, transform.localScale.z);
-            if (transform.localScale.z != 1.0f)
-                transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, 1.0f);
-            
-            transform.hasChanged = false;
-        }
-
-        if (scaleUpdated) {   
-            Rebuild();
-        } else if (updatedLastFrame) {   
-            HandleInteractions();
-        }
-    }
-
     /*  Helpers  */
 
-    void InitQuoins(float x, float y, float z)
+    /// <summary>
+    /// Initializes corner bricks.
+    /// </summary>
+    /// <param name="xFlip">Either 1.0f or -1.0f. Indicates on which side of the building we are placing corner bricks, in the x-direction.</param>
+    /// <param name="height">The height of the building.</param>
+    /// <param name="zFlip">Either 1.0f or -1.0f. Indicates on which side of the building we are placing corner bricks, in the z-direction.</param>
+    void InitQuoins(float xFlip, float height, float zFlip)
     {
         float epsilon = 0.000001f;
-        float widthOfBrick = 0.15f;
-        float lenthOfBrick = 0.25f;
-        y += epsilon;
+        float widthOfBrick = 0.1f;
+        float lenthOfBrick = 0.2f;
+        height += epsilon;
 
         float positionOnRoof = 1.0f - (((innerScale.x / 2.0f) - 0.05f) / (innerScale.x / 2.0f));
         float addedHeight = Mathf.Pow(positionOnRoof, roofCurve) * roofHeight;
-        y += ridgeLength > 0.2f ? 0.0f : addedHeight;
+        height += ridgeLength > 0.2f ? 0.0f : addedHeight;
 
-        int numBricksTall = Mathf.RoundToInt(y / 0.2f);
-        float heightOfBrick = y / numBricksTall;
+        int numBricksTall = Mathf.RoundToInt(height / 0.15f);
+        float heightOfBrick = height / numBricksTall;
 
         for (int i = 0; i < numBricksTall; i++)
         {
@@ -231,20 +284,39 @@ public class BuildingPart : MonoBehaviour
             widthOfBrick = lenthOfBrick;
             lenthOfBrick = temp;
 
-            Quoin new_quoin = Instantiate(quoin);
+            Quoin newQuoin = Instantiate(quoin);
+            float sizeNoise = widthOfBrick * (Mathf.Clamp(Mathf.PerlinNoise(i / 0.32f, (xFlip * innerScale.x) + (zFlip * innerScale.z)), 0.3f, 0.7f) - 0.3f);
+            float placementNoise = 0.1f * widthOfBrick * (Mathf.Clamp(Mathf.PerlinNoise(i / 0.78f, 0.1f * (xFlip * innerScale.x) + (zFlip * innerScale.z)), 0.3f, 0.7f) - 0.3f);
+            float thisWidth = widthOfBrick - (i % 2 == 0 ? sizeNoise : 0.0f);
+            float thisLength = lenthOfBrick - (i % 2 == 1 ? sizeNoise : 0.0f);
 
-            new_quoin.transform.localPosition = new Vector3(
-                x * ((innerScale.x / 2.0f) - (widthOfBrick / 2.0f) - 0.05f),
+            newQuoin.transform.localPosition = new Vector3(
+                xFlip * ((innerScale.x / 2.0f) - ((thisWidth + placementNoise) / 2.0f) - 0.05f),
                 -(innerScale.y / 2.0f) + (heightOfBrick / 2.0f) + (heightOfBrick * i) - (epsilon / 2.0f),
-                z * ((innerScale.z / 2.0f) - (lenthOfBrick / 2.0f) - 0.05f)
+                zFlip * ((innerScale.z / 2.0f) - ((thisLength + placementNoise) / 2.0f) - 0.05f)
             );
 
-            new_quoin.transform.localScale = new Vector3(widthOfBrick, heightOfBrick, lenthOfBrick);
-            new_quoin.transform.SetParent(brickStorage.transform, false);
-            new_quoin.name = "Quoin[" + x + "," + z + "]" + i;
+            newQuoin.transform.localScale = new Vector3(thisWidth, heightOfBrick, thisLength);
+            newQuoin.transform.SetParent(brickStorage.transform, false);
+
+            float rotationalNoise = Mathf.PerlinNoise(i / 0.87f, newQuoin.transform.position.x + newQuoin.transform.position.z);
+            if (rotationalNoise > 0.75f) {
+                newQuoin.transform.GetChild(1).RotateAround(newQuoin.transform.position, Vector3.up, 90.0f);
+            } else if (rotationalNoise > 0.5f) {
+                newQuoin.transform.GetChild(1).RotateAround(newQuoin.transform.position, Vector3.up, 180.0f);
+            } else if (rotationalNoise > 0.25f) {
+                newQuoin.transform.GetChild(1).RotateAround(newQuoin.transform.position, Vector3.up, 270.0f);
+            }
         }
     }
 
+    /// <summary>
+    /// Fills the array <c>noise</c> with Perlin noise. The sum of a row of noise is always equal to one.
+    /// </summary>
+    /// <param name="noise">The array to fill. Should be an <c>m</c> by <c>n</c> array.</param>
+    /// <param name="numBricksTall">The first dimension of the array, <c>m</c>.</param>
+    /// <param name="numBricksWide">The second dimension of the array, <c>n</c>.</param>
+    /// <param name="otherInput">Used to add in extra variability between calls to this method.</param>
     void SetNoise(float[,] noise, int numBricksTall, int numBricksWide, int otherInput)
     {
         for (int i = 0; i < numBricksTall; i++)
@@ -262,7 +334,17 @@ public class BuildingPart : MonoBehaviour
             noise[i, numBricksWide - 1] = -1.0f * sum;
         }
     }
-    
+
+    /// <summary>
+    /// Builds a single brick wall. Meant to be used four times in order to build a building part.
+    /// </summary>
+    /// <param name="numBricksTall">The number of bricks tall that the wall should be.</param>
+    /// <param name="numBricksWide">The number of bricks wide that the wall should be.</param>
+    /// <param name="heightOfBrick">The height of each brick.</param>
+    /// <param name="widthOfBrick">The default width of each brick.</param>
+    /// <param name="noise">Used to vary the width of each brick. This parameter should be generated using <c>SetNoise</c> so that the width of the wall stays the same.</param>
+    /// <param name="rotation">The rotation needed to rotate the wall such that its normal points outwards.</param>
+    /// <param name="shrink">How far inset from the roof the wall should be.</param>
     void BuildBrickWall(int numBricksTall, int numBricksWide, float heightOfBrick, float widthOfBrick, float[,] noise, float rotation, float shrink)
     {
         float direction = 1.0f;
@@ -279,16 +361,13 @@ public class BuildingPart : MonoBehaviour
                 float newWidth = Mathf.Abs(widthOfBrick + 0.1f * noise[i, j]);
                 float zNoise = 0.025f * (Mathf.PerlinNoise(i / 0.8f, j / 0.8f) - 0.5f);
                 
-                if (swap)
-                {
+                if (swap) {
                     newBrick.transform.localPosition = new Vector3(
                         -direction * ((innerScale.x / 2.0f) - (0.25f / 2.0f)) + zNoise,
                         -(innerScale.y / 2.0f) + (heightOfBrick / 2.0f) + (heightOfBrick * i),
                         ((innerScale.z / 2.0f) - shrink) - upTo - (newWidth / 2.0f)
                     );
-                }
-                else
-                {
+                } else {
                     newBrick.transform.localPosition = new Vector3(
                         ((innerScale.x / 2.0f) - shrink) - upTo - (newWidth / 2.0f),
                         -(innerScale.y / 2.0f) + (heightOfBrick / 2.0f) + (heightOfBrick * i),
@@ -299,16 +378,11 @@ public class BuildingPart : MonoBehaviour
                 newBrick.name = "Brick[" + i + "," + j + "]" + rotation;
 
                 float rotationalNoise = Mathf.PerlinNoise(i / 0.87f, j / 0.87f);
-                if (rotationalNoise > 0.75f)
-                {
+                if (rotationalNoise > 0.75f) {
                     newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 90.0f);
-                } 
-                else if (rotationalNoise > 0.5f)
-                {
+                } else if (rotationalNoise > 0.5f) {
                     newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 180.0f);
-                } 
-                else if (rotationalNoise > 0.25f)
-                {
+                } else if (rotationalNoise > 0.25f) {
                     newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 270.0f);
                 }
 
@@ -319,19 +393,9 @@ public class BuildingPart : MonoBehaviour
                 newBrick.splitNoise = Mathf.PerlinNoise(i / 0.8f, j / 0.8f);
                 newBrick.splitLocation = 0.7f * (Mathf.PerlinNoise(i / 0.3f, j / 0.3f) - 0.5f);
 
-                /*if (i != 0 && i != numBricksTall - 1)
-                {
-                    float heightDisplacement = 0.1f * (Mathf.PerlinNoise(newBrick.transform.position.x, newBrick.transform.position.z) - 0.5f);
-                    newBrick.transform.Translate(new Vector3(0.0f, heightDisplacement, 0.0f), Space.World);
-                }*/
-
                 upTo += newWidth;
             }
         }
-    }
-
-    private void DistanceToGround() {
-
     }
 
     void InitBricks()
@@ -340,10 +404,10 @@ public class BuildingPart : MonoBehaviour
         float height = innerScale.y;
 
         if (!woodFramed) {
-            InitQuoins(1.0f, height, 1.0f);
-            InitQuoins(1.0f, height, -1.0f);
-            InitQuoins(-1.0f, height, 1.0f);
-            InitQuoins(-1.0f, height, -1.0f);
+            BrickHelpers.InitQuoins(1.0f, height, 1.0f, this);
+            BrickHelpers.InitQuoins(1.0f, height, -1.0f, this);
+            BrickHelpers.InitQuoins(-1.0f, height, 1.0f, this);
+            BrickHelpers.InitQuoins(-1.0f, height, -1.0f, this);
         }
         
         // Rest of bricks
@@ -357,9 +421,14 @@ public class BuildingPart : MonoBehaviour
         float[,] noise = new float[numBricksTall, numBricksWide];
         SetNoise(noise, numBricksTall, numBricksWide, 0);
 
-        BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 90.0f, shrink / 2.0f);
-        BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 270.0f, shrink / 2.0f);
-        
+        BrickHelpers.BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 90.0f, shrink / 2.0f, this);
+        BrickHelpers.BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 270.0f, shrink / 2.0f, this);
+
+        float positionOnRoof = 1.0f - (((innerScale.x / 2.0f) - 0.05f) / (innerScale.x / 2.0f));
+        height = innerScale.y + (Mathf.Pow(positionOnRoof, roofCurve) * roofHeight);
+        numBricksTall = Mathf.RoundToInt(height / 0.1f);
+        heightOfBrick = height / numBricksTall;
+
         width = innerScale.z - shrink;
         numBricksWide = Mathf.RoundToInt(width / 0.15f);
         widthOfBrick = width / numBricksWide;
@@ -367,8 +436,8 @@ public class BuildingPart : MonoBehaviour
         noise = new float[numBricksTall, numBricksWide];
         SetNoise(noise, numBricksTall, numBricksWide, 0);
 
-        BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 0.0f, shrink / 2.0f);
-        BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 180.0f, shrink / 2.0f);
+        BrickHelpers.BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 0.0f, shrink / 2.0f, this);
+        BrickHelpers.BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 180.0f, shrink / 2.0f, this);
     }
 
     private float EstimateArcLength(float xDist)
@@ -445,7 +514,7 @@ public class BuildingPart : MonoBehaviour
 
         float lengthOfShingle = 1.2f * Vector3.Distance(previous, newShingle.transform.position);
 
-        if (yShift < roofHeight) {
+        if (yShift < roofHeight && woodFramed) {
             DeletesIfAskedNicely newBeam = Instantiate(simpleBeam);
             newBeam.transform.position = newShingle.transform.position;
             newBeam.transform.LookAt(previous, Vector3.up);
@@ -477,6 +546,7 @@ public class BuildingPart : MonoBehaviour
     void PlaceTopRidgeShingles(float length)
     {
         float width = ((1.0f - length) * innerScale.z) + 0.09f;
+        if (ridgeLength <= 0.2f && !woodFramed) width -= 0.1f;
         int numShinglesWide = Mathf.RoundToInt(width / 0.12f);
         float widthOfShingle = width / numShinglesWide;
 
@@ -488,6 +558,8 @@ public class BuildingPart : MonoBehaviour
 
         for (int i = 0; i < numShinglesWide; i++)
         {
+            if ((i == 0 || i == numShinglesWide - 1) && ridgeLength <= 0.2f && !woodFramed) continue;
+
             RidgeShingle newShingle = Instantiate(ridgeShingle);
             float zScale = 0.35f;
             float yScale = 0.01f;
@@ -639,12 +711,12 @@ public class BuildingPart : MonoBehaviour
         Vector3 rightRidgeShingle = new Vector3(
             side * ((innerScale.x / 2.0f) - xShift),
             (innerScale.y / 2.0f) + yShift,
-            (width / 2.0f)
+            (width / 2.0f) - (woodFramed ? 0.0f : 0.2f)
         );
         Vector3 leftRidgeShingle = new Vector3(
             side * ((innerScale.x / 2.0f) - xShift),
             (innerScale.y / 2.0f) + yShift,
-            -(width / 2.0f)
+            -(width / 2.0f) + (woodFramed ? 0.0f : 0.2f)
         );
 
         while (current <= 1.0f + Mathf.Epsilon)
@@ -655,10 +727,8 @@ public class BuildingPart : MonoBehaviour
             xShift = current * depth;
             yShift = Mathf.Pow(current, roofCurve) * roofHeight;
 
-            if (woodFramed) {
-                rightRidgeShingle = PlaceSimpleRidgeShingles(xShift, yShift, width, side, 1.0f, rightRidgeShingle);
-                leftRidgeShingle = PlaceSimpleRidgeShingles(xShift, yShift, width, side, -1.0f, leftRidgeShingle);
-            }
+            rightRidgeShingle = PlaceSimpleRidgeShingles(xShift, yShift, width - (woodFramed ? 0.0f : 0.40f), side, 1.0f, rightRidgeShingle);
+            leftRidgeShingle = PlaceSimpleRidgeShingles(xShift, yShift, width - (woodFramed ? 0.0f : 0.40f), side, -1.0f, leftRidgeShingle);
 
             float distance = width - (woodFramed ? -0.15f : 0.15f);
             int numShinglesWide = Mathf.RoundToInt(distance / shingleSize);
@@ -685,19 +755,27 @@ public class BuildingPart : MonoBehaviour
 
     void MoreQuoins(float x, float y, float z)
     {
-        Quoin new_quoin = Instantiate(quoin);
+        Quoin newQuoin = Instantiate(quoin);
         float positionOnRoof = 1.0f - (((innerScale.x / 2.0f) - 0.05f) / (innerScale.x / 2.0f));
         float addedHeight = Mathf.Pow(positionOnRoof, roofCurve) * roofHeight;
 
-        new_quoin.transform.localPosition = new Vector3(
+        newQuoin.transform.localPosition = new Vector3(
             x * ((innerScale.x / 2.0f) - (0.15f / 2.0f) - 0.05f),
-            (innerScale.y / 2.0f) + (0.175f / 2.0f) + addedHeight,
+            (innerScale.y / 2.0f) + (0.15f / 2.0f) + addedHeight,
             z * ((innerScale.z / 2.0f) - (0.125f / 2.0f) - 0.05f)
         );
 
-            //new_quoin.transform.RotateAround(transform.position, Vector3.up, transform.localEulerAngles.y);
-            new_quoin.transform.localScale = new Vector3(0.15f, 0.175f, 0.125f);
-            new_quoin.transform.SetParent(brickStorage.transform, false);
+        newQuoin.transform.localScale = new Vector3(0.15f, 0.15f, 0.125f);
+        newQuoin.transform.SetParent(brickStorage.transform, false);
+
+        float rotationalNoise = Mathf.PerlinNoise(newQuoin.transform.position.x, newQuoin.transform.position.z);
+        if (rotationalNoise > 0.75f) {
+            newQuoin.transform.GetChild(1).RotateAround(newQuoin.transform.position, Vector3.up, 90.0f);
+        } else if (rotationalNoise > 0.5f) {
+            newQuoin.transform.GetChild(1).RotateAround(newQuoin.transform.position, Vector3.up, 180.0f);
+        } else if (rotationalNoise > 0.25f) {
+            newQuoin.transform.GetChild(1).RotateAround(newQuoin.transform.position, Vector3.up, 270.0f);
+        }
     }
     
     void MoreBricks(float width, float side)
@@ -770,6 +848,9 @@ public class BuildingPart : MonoBehaviour
 
                 newBrick.transform.localScale = new Vector3(0.1f, heightOfBrick, newWidth);
                 newBrick.transform.SetParent(brickStorage.transform, false);
+
+                newBrick.splitNoise = Mathf.PerlinNoise(i / 0.8f, j / 0.8f);
+                newBrick.splitLocation = 0.7f * (Mathf.PerlinNoise(i / 0.3f, j / 0.3f) - 0.5f);
 
                 upTo += newWidth;
             }
@@ -919,7 +1000,7 @@ public class BuildingPart : MonoBehaviour
         {
             PlaceShinglesSimple(innerScale.z, innerScale.x / 2.0f, false, 1.0f);
             PlaceShinglesSimple(innerScale.z, innerScale.x / 2.0f, false, -1.0f);
-            PlaceTopRidgeShingles(woodFramed ? 0.0f : 0.2f);
+            PlaceTopRidgeShingles(0.0f);
             MoreBricks(innerScale.x, 1.0f);
             MoreBricks(innerScale.x, -1.0f);
 

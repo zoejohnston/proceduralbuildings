@@ -104,8 +104,6 @@ GameObject:
   m_Component:
   - component: {fileID: 7993729213803817522}
   - component: {fileID: 6028788500614743322}
-  - component: {fileID: 1734457023044243379}
-  - component: {fileID: 1688578834045136034}
   m_Layer: 0
   m_Name: Quoin
   m_TagString: Untagged
@@ -127,6 +125,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 234293456085379543}
+  - {fileID: 1424281289949159254}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6028788500614743322
@@ -141,21 +140,54 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: baafd73333127724c9130bbd75383825, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!33 &1734457023044243379
+--- !u!1 &5553066169770330848
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1424281289949159254}
+  - component: {fileID: 4071287940526910878}
+  - component: {fileID: 4331110223030132616}
+  m_Layer: 0
+  m_Name: Graphics
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1424281289949159254
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5553066169770330848}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7993729213803817522}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &4071287940526910878
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5328371928025529906}
+  m_GameObject: {fileID: 5553066169770330848}
   m_Mesh: {fileID: -5495902117074765545, guid: e987f0d6f69669a45a79568dc69ab716, type: 3}
---- !u!23 &1688578834045136034
+--- !u!23 &4331110223030132616
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5328371928025529906}
+  m_GameObject: {fileID: 5553066169770330848}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1

@@ -7,12 +7,6 @@ public class Quoin : MonoBehaviour
 {
     private bool delete = false;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
     // Update is called once per frame
     void Update()
     {
@@ -21,12 +15,8 @@ public class Quoin : MonoBehaviour
         }
     }
 
-    void OnTriggerEnter(Collider other)
-    {
-        //Debug.Log("Collided with");
-    }
-
     public void DeletePls() {
         delete = true;
+        gameObject.transform.GetChild(1).gameObject.GetComponent<MeshRenderer>().enabled = false;
     }
 }
