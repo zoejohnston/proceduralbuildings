@@ -1,7 +1,35 @@
 using UnityEngine;
 
+/// <summary>
+/// Some helper methods for building with bricks.
+/// </summary>
 public static class BrickHelpers
-{
+{   
+    /// <summary>
+    /// Fills the array <c>noise</c> with Perlin noise. The sum of a row of noise is always equal to one.
+    /// </summary>
+    /// <param name="noise">The array to fill. Should be an <c>m</c> by <c>n</c> array.</param>
+    /// <param name="numBricksTall">The first dimension of the array, <c>m</c>.</param>
+    /// <param name="numBricksWide">The second dimension of the array, <c>n</c>.</param>
+    /// <param name="otherInput">Used to add in extra variability between calls to this method.</param>
+    public static void SetNoise(float[,] noise, int numBricksTall, int numBricksWide, int otherInput)
+    {
+        for (int i = 0; i < numBricksTall; i++)
+        {
+            float sum = 0.0f;
+            noise[i, 0] = Mathf.PerlinNoise((i + otherInput) / 0.7f, 0 / 0.7f) - 0.5f;
+            sum += noise[i, 0];
+
+            for (int j = 1; j < numBricksWide - 1; j++)
+            {
+                noise[i, j] = Mathf.PerlinNoise((i + otherInput) / 0.7f, j / 0.7f) - 0.5f;
+                sum += noise[i, j];
+            }
+
+            noise[i, numBricksWide - 1] = -1.0f * sum;
+        }
+    }
+
     /// <summary>
     /// Builds a single brick wall. Meant to be used four times in order to build a building part.
     /// </summary>
@@ -118,6 +146,120 @@ public static class BrickHelpers
                 newQuoin.transform.GetChild(1).RotateAround(newQuoin.transform.position, Vector3.up, 180.0f);
             } else if (rotationalNoise > 0.25f) {
                 newQuoin.transform.GetChild(1).RotateAround(newQuoin.transform.position, Vector3.up, 270.0f);
+            }
+        }
+    }
+
+    /// <summary>
+    /// When the roof ridge is as long as possible, we need to extend the wall up to meet the roof. This method handles
+    /// the corner bricks for the extended wall.
+    /// </summary>
+    /// <param name="x">.</param>
+    /// <param name="z">.</param>
+    /// <param name="buildingPart">.</param>
+    public static void MoreQuoins(float x, float z, BuildingPart buildingPart)
+    {
+        Vector3 innerScale = buildingPart.GetScale();
+        Quoin newQuoin = Object.Instantiate(buildingPart.quoin);
+        float positionOnRoof = 1.0f - (((innerScale.x / 2.0f) - 0.05f) / (innerScale.x / 2.0f));
+        float addedHeight = Mathf.Pow(positionOnRoof, buildingPart.roofCurve) * buildingPart.roofHeight;
+
+        newQuoin.transform.localPosition = new Vector3(
+            x * ((innerScale.x / 2.0f) - (0.15f / 2.0f) - 0.05f),
+            (innerScale.y / 2.0f) + (0.15f / 2.0f) + addedHeight,
+            z * ((innerScale.z / 2.0f) - (0.125f / 2.0f) - 0.05f)
+        );
+
+        newQuoin.transform.localScale = new Vector3(0.15f, 0.15f, 0.125f);
+        newQuoin.transform.SetParent(buildingPart.brickStorage.transform, false);
+
+        float rotationalNoise = Mathf.PerlinNoise(newQuoin.transform.position.x, newQuoin.transform.position.z);
+        if (rotationalNoise > 0.75f) {
+            newQuoin.transform.GetChild(1).RotateAround(newQuoin.transform.position, Vector3.up, 90.0f);
+        } else if (rotationalNoise > 0.5f) {
+            newQuoin.transform.GetChild(1).RotateAround(newQuoin.transform.position, Vector3.up, 180.0f);
+        } else if (rotationalNoise > 0.25f) {
+            newQuoin.transform.GetChild(1).RotateAround(newQuoin.transform.position, Vector3.up, 270.0f);
+        }
+    }
+
+    /// <summary>
+    /// When the roof ridge is as long as possible, we need to extend the wall up to meet the roof. This method handles
+    /// the bricks for the extended wall.
+    /// </summary>
+    /// <param name="width">.</param>
+    /// <param name="side">.</param>
+    /// <param name="buildingPart">.</param>
+    public static void MoreBricks(float width, float side, BuildingPart buildingPart)
+    {
+        Vector3 innerScale = buildingPart.GetScale();
+        int numBricksTall = Mathf.RoundToInt(buildingPart.roofHeight / 0.1f);
+        float heightOfBrick = buildingPart.roofHeight / numBricksTall;
+        if (!buildingPart.woodFramed) numBricksTall += 1;
+
+        for (int i = 0; i < numBricksTall; i++) {
+            float yShift = (heightOfBrick / 2.0f) + (heightOfBrick * (i - 1));
+            if (buildingPart.woodFramed) yShift = heightOfBrick * i;
+            if (yShift < 0.0f) yShift = 0.0f;
+            float xShift = Mathf.Pow(yShift / buildingPart.roofHeight, 1.0f / buildingPart.roofCurve);
+
+            float distance = width * (1.0f - xShift);
+
+            if (i == 0) {
+                if (buildingPart.woodFramed) continue;
+                distance = width - 0.2f;
+                yShift = heightOfBrick / -2.0f;
+            }
+
+            if (buildingPart.woodFramed) yShift = (heightOfBrick * (i - 1)) - (heightOfBrick / 2.0f);
+
+            if (distance > width - 0.2f) distance = width - 0.2f;
+            int numBricksWide = Mathf.RoundToInt(distance / 0.15f);
+            float widthOfBrick = distance / numBricksWide;
+
+            if (numBricksWide == 0) {
+                if (buildingPart.woodFramed) continue;
+                numBricksWide = 1;
+                widthOfBrick = 0.1f;
+                distance = 0.1f;
+            }
+
+            float[,] noise = new float[1, numBricksWide];
+            SetNoise(noise, 1, numBricksWide, i);
+
+            float startPosition = distance / 2.0f;
+            float upTo = 0.0f;
+
+            for (int j = 0; j < numBricksWide; j++)
+            {
+                Brick newBrick = Object.Instantiate(buildingPart.brick);
+                float newWidth = numBricksWide == 1 ? widthOfBrick : Mathf.Abs(widthOfBrick + 0.1f * noise[0, j]);
+                float zNoise = 0.025f * (Mathf.PerlinNoise(i / 0.8f, j / 0.8f) - 0.5f);
+
+                newBrick.transform.localPosition = new Vector3(
+                    startPosition - upTo - (newWidth / 2.0f),
+                    (innerScale.y / 2.0f) + yShift + heightOfBrick,
+                    side * ((innerScale.z / 2.0f) - 0.125f) + zNoise
+                );
+
+                newBrick.transform.Rotate(new Vector3(0.0f, side * 90.0f, 0.0f), Space.Self);
+
+                float rotationalNoise = Mathf.PerlinNoise(i / 0.87f, j / 0.87f);
+                if (rotationalNoise > 0.75f) {
+                    newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 90.0f);
+                } else if (rotationalNoise > 0.5f) {
+                    newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 180.0f);
+                } else if (rotationalNoise > 0.25f) {
+                    newBrick.transform.GetChild(1).RotateAround(newBrick.transform.position, Vector3.up, 270.0f);
+                }
+
+                newBrick.transform.localScale = new Vector3(0.1f, heightOfBrick, newWidth);
+                newBrick.transform.SetParent(buildingPart.brickStorage.transform, false);
+
+                newBrick.splitNoise = Mathf.PerlinNoise(i / 0.8f, j / 0.8f);
+                newBrick.splitLocation = 0.7f * (Mathf.PerlinNoise(i / 0.3f, j / 0.3f) - 0.5f);
+
+                upTo += newWidth;
             }
         }
     }
