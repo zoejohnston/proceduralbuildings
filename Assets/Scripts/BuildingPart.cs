@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Analytics;
 
 [ExecuteInEditMode]
 [SelectionBase]
@@ -10,6 +12,8 @@ public class BuildingPart : MonoBehaviour
 
     [SerializeField]
     private Vector3 innerScale = Vector3.one;
+    [SerializeField]
+    public List<GameObject> interBuildingPartObjects = new List<GameObject>();
     private bool scaleUpdated = false;
 
 
@@ -167,10 +171,13 @@ public class BuildingPart : MonoBehaviour
         InitBricks();
         InitRoof();
         if (woodFramed) InitBeams();
+        HandleInteractions();
     }
 
     // Update is called once per frame.
     void Update() {
+        bool handleInterBuildingPartInteractions = false;
+
         if (transform.hasChanged) {
             // Actual scale should never change
             if (transform.localScale.x != 1.0f || transform.localScale.y != 1.0f || transform.localScale.z != 1.0f)
@@ -183,12 +190,18 @@ public class BuildingPart : MonoBehaviour
             if (transform.localScale.z != 1.0f)
                 transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, 1.0f);
             
+            handleInterBuildingPartInteractions = true;
             transform.hasChanged = false;
         }
 
         if (scaleUpdated) {   
             Rebuild(); 
             HandleInteractions();
+            handleInterBuildingPartInteractions = true;
+        }
+
+        if (handleInterBuildingPartInteractions) {
+            InterBuildingPartInteractions();
         }
     }
     
@@ -245,12 +258,110 @@ public class BuildingPart : MonoBehaviour
             if (childObject.TryGetComponent(out SubBeam subBeamToDelete)) subBeamToDelete.DeletePls();
         }
 
+        interBuildingPartObjects.Clear();
+
         // Rebuilding
         InitBricks();
         InitRoof();
         if (woodFramed) InitBeams();
 
         scaleUpdated = false;
+    }
+
+    /// <summary>
+    /// Some objects need to be rebuilt whenever the building part moves.
+    /// </summary>
+    private void InterBuildingPartInteractions() 
+    {
+        // Clear previous
+        foreach (GameObject existingGameObject in interBuildingPartObjects) {
+            if (existingGameObject == null) continue;
+            if (existingGameObject.TryGetComponent(out Brick brickToDelete)) brickToDelete.DeletePls();
+            if (existingGameObject.TryGetComponent(out DeletesIfAskedNicely plsToDelete)) plsToDelete.DeletePls();
+            if (existingGameObject.TryGetComponent(out Beam beamToDelete)) beamToDelete.DeletePls();
+        }
+
+        interBuildingPartObjects.Clear();
+
+        // Build supports
+        if (!IsAboveGround()) return;
+        if (woodFramed) {
+            RaycastHit hit;
+            LayerMask mask = LayerMask.GetMask("BuildingPart");
+            Vector3 wallScale = new Vector3(innerScale.x - 0.15f, innerScale.y, innerScale.z - 0.15f);
+
+            for (int i = -1; i < 2; i += 2) {
+                for (int j = -1; j < 2; j += 2) {
+                    Vector3 corner = transform.TransformPoint(new Vector3(i * wallScale.x, -wallScale.y, j * wallScale.z) / 2.0f);
+                    bool wasAbleToSupport = false;
+
+                    if (Physics.CheckSphere(corner - new Vector3(0.0f, 0.001f, 0.0f), 0.00001f, mask)) continue;
+
+                    for (int k = -1; k < 2; k += 2) {
+                        int otherK = -1 * k;
+                        Vector3 otherCorner = transform.TransformPoint(new Vector3(k * i * wallScale.x, -wallScale.y, otherK * j * wallScale.z) / 2.0f);
+                        Vector3 direction = otherCorner - corner;
+
+                        if (Physics.Raycast(corner - new Vector3(0.0f, 0.001f, 0.0f), direction, out hit, 0.3f, mask)) { 
+                            BeamHelpers.BuildSupport(corner, hit.point, this);
+                            wasAbleToSupport = true;
+                        }
+                    }
+
+                    if (!wasAbleToSupport) {
+                        BeamHelpers.BuildSignificantSupport(corner - new Vector3(0.0f, 0.001f, 0.0f), i, j, this);
+                    }
+                }
+            }
+        } else {
+            RaycastHit hit;
+            LayerMask mask = LayerMask.GetMask("BuildingPart");
+            Vector3 wallScale = new Vector3(innerScale.x - 0.2f, innerScale.y, innerScale.z - 0.2f);
+
+            bool[,] cornerSupported = {{false, false}, {false, false}};
+
+            for (int i = -1; i < 2; i += 2) {
+                for (int j = -1; j < 2; j += 2) {
+                    int xFlip = i == j ? -1 : 1;
+                    int zFlip = i == j ? 1 : -1;
+
+                    Vector3 corner = transform.TransformPoint(new Vector3(i * wallScale.x, -wallScale.y, j * wallScale.z) / 2.0f);
+
+                    if (Physics.CheckSphere(corner - new Vector3(0.0f, 0.001f, 0.0f), 0.00001f, mask)) {
+                        cornerSupported[(i + 1) / 2, (j + 1) / 2] = true;
+                    }
+
+                    Vector3 rightCorner = transform.TransformPoint(new Vector3(xFlip * i * wallScale.x, -wallScale.y, zFlip * j * wallScale.z) / 2.0f);
+                    Vector3 leftCorner = transform.TransformPoint(new Vector3(-1 * xFlip * i * wallScale.x, -wallScale.y, -1 * zFlip * j * wallScale.z) / 2.0f);
+                    Vector3 direction = leftCorner - corner;
+
+                    float distanceToCover = Vector3.Distance(corner, rightCorner);
+                    int numSupports = Mathf.RoundToInt(distanceToCover / 0.1f);
+
+                    Vector3 raycastStart = corner - new Vector3(0.0f, 0.001f, 0.0f);
+                    Vector3 raycastEnd = rightCorner - new Vector3(0.0f, 0.001f, 0.0f);
+
+                    for (int k = 0; k < numSupports + 1; k++) {
+                        Vector3 lerped = Vector3.Lerp(raycastStart, raycastEnd, k / (float) numSupports);
+                        if (Physics.Raycast(lerped, direction, out hit, 0.2f, mask)) { 
+                            BrickHelpers.BuildSupport(lerped, hit.point, this);
+                            if (k == 0) cornerSupported[(i + 1) / 2, (j + 1) / 2] = true;
+                            if (k == numSupports) cornerSupported[((xFlip * i) + 1) / 2, ((zFlip * j) + 1) / 2] = true;
+                        }
+                    }
+                }
+            }
+
+            for (int i = -1; i < 2; i += 2) {
+                for (int j = -1; j < 2; j += 2) {
+                    Vector3 corner = transform.TransformPoint(new Vector3(i * wallScale.x, -wallScale.y, j * wallScale.z) / 2.0f);
+
+                    if (!cornerSupported[(i + 1) / 2, (j + 1) / 2]) {
+                        BrickHelpers.BuildSignificantSupport(corner - new Vector3(0.0f, 0.001f, 0.0f), i, j, this);
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -306,27 +417,6 @@ public class BuildingPart : MonoBehaviour
 
         BrickHelpers.BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 0.0f, shrink / 2.0f, this);
         BrickHelpers.BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 180.0f, shrink / 2.0f, this);
-
-        if (IsAboveGround()) {
-            /*RaycastHit hit;
-            LayerMask mask = LayerMask.GetMask("BuildingPart");
-            Vector3 wallScale = new Vector3(innerScale.x - 0.15f, innerScale.y, innerScale.z - 0.15f);
-
-            for (int i = -1; i < 2; i += 2) {
-                for (int j = -1; j < 2; j += 2) {
-                    for (int k = -1; k < 2; k += 2) {
-                        int otherK = -1 * k;
-                        Vector3 corner = transform.TransformPoint(new Vector3(i * wallScale.x, -wallScale.y, j * wallScale.z) / 2.0f);
-                        Vector3 otherCorner = transform.TransformPoint(new Vector3(k * i * wallScale.x, -wallScale.y, otherK * j * wallScale.z) / 2.0f);
-                        Vector3 direction = otherCorner - corner;
-
-                        if (Physics.Raycast(corner - new Vector3(0.0f, 0.001f, 0.0f), direction, out hit, direction.magnitude, mask)) { 
-                            if (hit.collider.transform.root != transform) BeamHelpers.BuildSupport(corner, hit.point, this);
-                        }
-                    }
-                }
-            }*/
-        }
     }
 
     /// <summary>
@@ -357,36 +447,6 @@ public class BuildingPart : MonoBehaviour
         BeamHelpers.PlaceHorizontalBeams(numBeamsTall - 1, heightOfBeam, innerScale.x - shrink, width, true, -1.0f, this);
 
         BeamHelpers.PlaceCornerBeams(innerScale.y, width, innerScale.x - shrink, this);
-
-        if (IsAboveGround()) {
-            RaycastHit hit;
-            LayerMask mask = LayerMask.GetMask("BuildingPart");
-            Vector3 wallScale = new Vector3(innerScale.x - 0.15f, innerScale.y, innerScale.z - 0.15f);
-
-            for (int i = -1; i < 2; i += 2) {
-                for (int j = -1; j < 2; j += 2) {
-                    Vector3 corner = transform.TransformPoint(new Vector3(i * wallScale.x, -wallScale.y, j * wallScale.z) / 2.0f);
-                    bool wasAbleToSupport = false;
-
-                    if (Physics.CheckSphere(corner - new Vector3(0.0f, 0.001f, 0.0f), 0.00001f, mask)) continue;
-
-                    for (int k = -1; k < 2; k += 2) {
-                        int otherK = -1 * k;
-                        Vector3 otherCorner = transform.TransformPoint(new Vector3(k * i * wallScale.x, -wallScale.y, otherK * j * wallScale.z) / 2.0f);
-                        Vector3 direction = otherCorner - corner;
-
-                        if (Physics.Raycast(corner - new Vector3(0.0f, 0.001f, 0.0f), direction, out hit, 0.3f, mask)) { 
-                            BeamHelpers.BuildSupport(corner, hit.point, this);
-                            wasAbleToSupport = true;
-                        }
-                    }
-
-                    if (!wasAbleToSupport) {
-                        BeamHelpers.BuildSignificantSupport(corner - new Vector3(0.0f, 0.001f, 0.0f), i, j, this);
-                    }
-                }
-            }
-        }
     }
 
     /// <summary>

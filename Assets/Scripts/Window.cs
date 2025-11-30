@@ -4,17 +4,23 @@ using UnityEngine;
 [SelectionBase]
 public class Window : MonoBehaviour
 {
-    public BuildingPart snappedTo;
+    // Windows keep track of the BuildingPart they are attached to and which wall they are on
+    public BuildingPart attachedBuildingPart;
     public WallCollider wall;
+
+    // Some useful prefabs
     public Shingle shingle;
     public RidgeShingle ridgeShingle;
 
+    // Used to set how far into the wall the window should sit
     public float offset;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
+    // We only want to update attachedBuildingPart if the window's localPosition changes
+    private Vector3 previousPosition;
+    
+    // Start is called before the first frame update.
+    void Start() {
+        previousPosition = transform.localPosition;
     }
 
     // Update is called once per frame
@@ -22,12 +28,12 @@ public class Window : MonoBehaviour
     {
         ClearDormer();
 
-        if (snappedTo == null) return;
+        if (attachedBuildingPart == null) return;
         if (wall == null) return;
 
-        if (transform.hasChanged)
-        {
-            snappedTo.UpdateNextFrame();
+        if (transform.hasChanged) {
+            if (previousPosition != transform.localPosition) attachedBuildingPart.UpdateNextFrame();
+            previousPosition = transform.localPosition;
             transform.hasChanged = false;
         }
 
@@ -35,8 +41,8 @@ public class Window : MonoBehaviour
             Vector3 up = new Vector3(0.0f, (transform.GetChild(0).localScale.y / 2.0f) + 0.02f, 0.0f);
             Vector3 backwards = transform.TransformDirection(Vector3.left);
             Vector3 startPosition = transform.position + transform.TransformDirection(up);
-            Vector3 endPosition = snappedTo.GetDormerAttachPoint(startPosition + (0.15f * Vector3.up), backwards, wall.connectedWall != null);
-            float verticalDistanceToWall = snappedTo.GetDormerHeight(startPosition);
+            Vector3 endPosition = attachedBuildingPart.GetDormerAttachPoint(startPosition + (0.15f * Vector3.up), backwards, wall.connectedWall != null);
+            float verticalDistanceToWall = attachedBuildingPart.GetDormerHeight(startPosition);
 
             Vector3 localStartPosition = transform.InverseTransformPoint(startPosition);
             Vector3 localEndPosition = transform.InverseTransformPoint(endPosition);
@@ -49,9 +55,10 @@ public class Window : MonoBehaviour
         }
     }
 
+    // This function is called when the Window will be destroyed
     void OnDestroy()
     {
-        snappedTo.UpdateNextFrame();
+        attachedBuildingPart.UpdateNextFrame();
     }
 
     public void UpdatePosition()
@@ -199,6 +206,6 @@ public class Window : MonoBehaviour
 
     public void SetSnap(BuildingPart buildingPart)
     {
-        snappedTo = buildingPart;
+        attachedBuildingPart = buildingPart;
     }
 }

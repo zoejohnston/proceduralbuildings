@@ -263,4 +263,88 @@ public static class BrickHelpers
             }
         }
     }
+
+    /// <summary>
+    /// Builds a support for a small overhang
+    /// </summary>
+    public static void BuildSupport(Vector3 start, Vector3 end, BuildingPart buildingPart)
+    {
+        float lengthAvailable = Vector3.Distance(start, end);
+        float firstBrickDefault = 0.05f;
+
+        Brick newBrick = Object.Instantiate(buildingPart.brick);
+        newBrick.transform.SetParent(buildingPart.brickStorage.transform, false);
+
+        if (lengthAvailable > firstBrickDefault) {
+            newBrick.transform.position = end + (0.5f * firstBrickDefault * Vector3.Normalize(start - end)) + (0.05f * Vector3.down);
+            newBrick.transform.localScale = new Vector3(0.05f, 0.1f, firstBrickDefault);
+
+            float lengthOfBrick = lengthAvailable > firstBrickDefault + 0.1f ? 0.1f : lengthAvailable - firstBrickDefault;
+
+            Brick newBrick2 = Object.Instantiate(buildingPart.brick);
+            newBrick2.transform.SetParent(buildingPart.brickStorage.transform, false);
+            newBrick2.transform.position = end + ((firstBrickDefault + 0.5f * lengthOfBrick) * Vector3.Normalize(start - end)) + (0.025f * Vector3.down);
+            newBrick2.transform.localScale = new Vector3(0.05f, 0.05f, lengthOfBrick);
+            buildingPart.interBuildingPartObjects.Add(newBrick2.gameObject);
+        } else {
+            newBrick.transform.position = end + (0.5f * lengthAvailable * Vector3.Normalize(start - end)) + (0.05f * Vector3.down);
+            newBrick.transform.localScale = new Vector3(0.05f, 0.1f, lengthAvailable);
+        }
+
+        buildingPart.interBuildingPartObjects.Add(newBrick.gameObject);
+    }
+
+    /// <summary>
+    /// Used by BuildSignificantSupport to build one brick level of a column.
+    /// </summary>
+    private static void BuildColumnLevel(Vector3 center, BuildingPart buildingPart, bool rotate, float widthMultiplier, float heightOfBrick)
+    {
+        float totalWidth = widthMultiplier * 0.2f;
+        float brickDepth = 0.05f;
+        float halfBrickDepth = brickDepth / 2.0f;
+        float flip = rotate ? -1 : 1;
+
+        for (int i = 0; i < 4; i++) {
+            Brick newBrick = Object.Instantiate(buildingPart.brick);
+            newBrick.transform.SetParent(buildingPart.brickStorage.transform, false);
+            newBrick.transform.position = center;
+            newBrick.transform.Translate(new Vector3(flip * halfBrickDepth, 0.0f, (totalWidth / 2.0f) - halfBrickDepth), Space.Self);
+            newBrick.transform.localScale = new Vector3(totalWidth - brickDepth, heightOfBrick, brickDepth);
+            newBrick.transform.RotateAround(center, Vector3.up, i * 90.0f);
+            buildingPart.interBuildingPartObjects.Add(newBrick.gameObject);
+        }
+    }
+
+    /// <summary>
+    /// Builds a support for a large overhang
+    /// </summary>
+    public static void BuildSignificantSupport(Vector3 start, int i, int j, BuildingPart buildingPart)
+    {
+        RaycastHit hit;
+        Vector3 endPoint;
+        LayerMask mask = ~LayerMask.GetMask("Windows", "Default");
+
+        if (Physics.Raycast(start, Vector3.down, out hit, start.y, mask)) {
+            endPoint = hit.point + (0.05f * Vector3.down);
+        } else {
+            endPoint = new Vector3(start.x, 0.0f, start.z);
+        }
+
+        float supportLength = Vector3.Distance(start, endPoint);
+        int numBricksTall = Mathf.RoundToInt(supportLength / 0.1f);
+        float heightOfBrick = supportLength / numBricksTall;
+
+        for (int k = 0; k < numBricksTall; k++) {
+            float width = 1.0f;
+            if (numBricksTall > 2) width = ((2.0f * k / (numBricksTall - 2)) - 1) * ((2.0f * k / (numBricksTall - 2)) - 1);
+            if (k == 0) { width = 1.1f; }
+            if (width < 0.6f) { width = 0.6f; }
+            else if (width > 1.0f) { width = 1.0f; }
+            else { width = 0.8f; }
+
+            Vector3 center = start + (((k * heightOfBrick) + (heightOfBrick / 2.0f)) * Vector3.down);
+            center += buildingPart.transform.TransformDirection(new Vector3(-1 * i * 0.1f, 0.0f, -1 * j * 0.1f));
+            BuildColumnLevel(center, buildingPart, k % 2 == 0, width, heightOfBrick);
+        }
+    }
 }

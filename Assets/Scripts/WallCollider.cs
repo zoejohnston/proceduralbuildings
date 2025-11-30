@@ -1,26 +1,17 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
+/// <summary>
+/// Supports specific wall behavior.
+/// </summary>
 public class WallCollider : MonoBehaviour
 {
     public Vector3 normal;
     public WallCollider connectedWall;
     public bool isTopWall = false;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
+    /// <summary>
+    /// Attaches a window to this wall, centered at <c>point</c>.
+    /// </summary>
     public void PlaceWindow(Window window, BuildingPart buildingPart, Vector3 point)
     {
         Window newWindow = Instantiate(window, buildingPart.windowStorage.transform);
@@ -38,6 +29,9 @@ public class WallCollider : MonoBehaviour
         newWindow.transform.Translate(new Vector3(newWindow.offset, 0.0f, 0.0f), Space.Self);
     }
 
+    /// <summary>
+    /// Returns true if <c>point</c> is inside <c>collider</c> (assumes that collider is not more than 2.0f thick).
+    /// </summary>
     private bool RaycastHelper(MeshCollider collider, Vector3 point)
     {
         Ray ray = new Ray(point - normal, normal);
@@ -46,40 +40,50 @@ public class WallCollider : MonoBehaviour
         return collider.Raycast(ray, out hit, 2.0f);
     }
     
+    /// <summary>
+    /// Returns true if <c>point</c> is inside this WallCollider.
+    /// </summary>
     public bool PointIsWithinWall(Vector3 point)
-    {
-        if (gameObject.TryGetComponent<BoxCollider>(out BoxCollider boxCollider))
-        {
+    {   
+        // If this wall has a BoxCollider
+        if (gameObject.TryGetComponent(out BoxCollider boxCollider)) {
             Vector3 closestPoint = boxCollider.ClosestPoint(point);
 
             if (closestPoint == point) {
                 return true;
             } else {
+                // If it isn't in this wall, but this wall has a connected wall, check that one too
                 if (connectedWall != null) {
-                    if (connectedWall.TryGetComponent<BoxCollider>(out BoxCollider connectedBoxCollider)) {
+                    if (connectedWall.TryGetComponent(out BoxCollider connectedBoxCollider)) {
                         closestPoint = connectedBoxCollider.ClosestPoint(point);
                         if (closestPoint == point) return true;
-                    } else if (connectedWall.TryGetComponent<MeshCollider>(out MeshCollider connectedMeshCollider)) {
+                    } else if (connectedWall.TryGetComponent(out MeshCollider connectedMeshCollider)) {
                         if (RaycastHelper(connectedMeshCollider, point)) return true;
+                    } else {
+                        Debug.LogError("WallCollider requires a component of either type MeshCollider or BoxCollider");
                     }
                 }
                 
             }
-        }
-        else if (gameObject.TryGetComponent<MeshCollider>(out MeshCollider meshCollider))
-        {
+        // If this wall has a MeshCollider
+        } else if (gameObject.TryGetComponent(out MeshCollider meshCollider)) {
             if (RaycastHelper(meshCollider, point)) {
                 return true;
             } else {
+                // If it isn't in this wall, but this wall has a connected wall, check that one too
                 if (connectedWall != null) {
-                    if (connectedWall.TryGetComponent<BoxCollider>(out BoxCollider connectedBoxCollider)) {
+                    if (connectedWall.TryGetComponent(out BoxCollider connectedBoxCollider)) {
                         Vector3 closestPoint = connectedBoxCollider.ClosestPoint(point);
                         if (closestPoint == point) return true;
-                    } else if (connectedWall.TryGetComponent<MeshCollider>(out MeshCollider connectedMeshCollider)) {
+                    } else if (connectedWall.TryGetComponent(out MeshCollider connectedMeshCollider)) {
                         if (RaycastHelper(connectedMeshCollider, point)) return true;
+                    } else {
+                        Debug.LogError("WallCollider requires a component of either type MeshCollider or BoxCollider");
                     }
                 }
             }
+        } else {
+            Debug.LogError("WallCollider requires a component of either type MeshCollider or BoxCollider");
         }
 
         return false;

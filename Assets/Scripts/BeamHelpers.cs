@@ -5,6 +5,9 @@ using UnityEngine;
 /// </summary>
 public static class BeamHelpers
 {
+    /// <summary>
+    /// Places small vertical support beams on the building
+    /// </summary>
     public static void PlaceVerticalBeams(int numBeamsTall, float heightOfBeam, int numBeamsWide, float widthOfBeam, float width, 
         float depth, bool flip, float side, BuildingPart buildingPart)
     {
@@ -53,6 +56,9 @@ public static class BeamHelpers
         }
     }
 
+    /// <summary>
+    /// Places horizontal beams that split the building into multiple floors
+    /// </summary>
     public static void PlaceHorizontalBeams(int numBeamsTall, float heightOfBeam, float widthOfBeam, float depth, bool flip, float side, BuildingPart buildingPart)
     {
         if (buildingPart.ridgeLength <= 0.2f && flip) numBeamsTall += 1;
@@ -85,6 +91,9 @@ public static class BeamHelpers
         }
     }
 
+    /// <summary>
+    /// Places a large vertical beam at each corner
+    /// </summary>
     public static void PlaceCornerBeams(float height, float width, float depth, BuildingPart buildingPart)
     {   
         Vector3 innerScale = buildingPart.GetScale();
@@ -112,6 +121,9 @@ public static class BeamHelpers
         }
     }
 
+    /// <summary>
+    /// Builds a support for a small overhang
+    /// </summary>
     public static void BuildSupport(Vector3 start, Vector3 end, BuildingPart buildingPart)
     {
         Vector3 pointBelowEnd = end - new Vector3(0.0f, 0.1f, 0.0f);
@@ -121,6 +133,7 @@ public static class BeamHelpers
         supportBeam.transform.position = Vector3.Lerp(start, pointBelowEnd, 0.5f);
         supportBeam.transform.LookAt(start);
         supportBeam.transform.SetParent(buildingPart.beamStorage.transform, true);
+        buildingPart.interBuildingPartObjects.Add(supportBeam.gameObject);
 
         pointBelowEnd -= new Vector3(0.0f, 0.05f, 0.0f);
         DeletesIfAskedNicely verticalSupportBeam = Object.Instantiate(buildingPart.simpleBeam);
@@ -129,8 +142,12 @@ public static class BeamHelpers
         verticalSupportBeam.transform.SetParent(buildingPart.beamStorage.transform, false);
         verticalSupportBeam.transform.position = Vector3.Lerp(end, pointBelowEnd, 0.5f);
         verticalSupportBeam.transform.Rotate(new Vector3(90.0f, 0.0f, 0.0f), Space.Self);
+        buildingPart.interBuildingPartObjects.Add(verticalSupportBeam.gameObject);
     }
 
+    /// <summary>
+    /// Builds a support for a large overhang
+    /// </summary>
     public static void BuildSignificantSupport(Vector3 start, int i, int j, BuildingPart buildingPart)
     {
         RaycastHit hit;
@@ -144,6 +161,7 @@ public static class BeamHelpers
             supportLength = Vector3.Distance(start, hit.point + (0.05f * Vector3.down));
             newBeam.transform.localScale = new Vector3(1.2f, 1.2f, supportLength);
             newBeam.transform.Rotate(new Vector3(90.0f, 0.0f, 0.0f));
+            buildingPart.interBuildingPartObjects.Add(newBeam.gameObject);
         } else {
             Beam newBeam = Object.Instantiate(buildingPart.beam);
             Vector3 end = new Vector3(start.x, 0.0f, start.z);
@@ -152,6 +170,7 @@ public static class BeamHelpers
             supportLength = Vector3.Distance(start, end);
             newBeam.transform.localScale = new Vector3(1.2f, 1.2f, supportLength);
             newBeam.transform.Rotate(new Vector3(90.0f, 0.0f, 0.0f));
+            buildingPart.interBuildingPartObjects.Add(newBeam.gameObject);
         }
 
         DeletesIfAskedNicely supportBeam = Object.Instantiate(buildingPart.simpleBeam);
@@ -165,6 +184,7 @@ public static class BeamHelpers
         supportBeam.transform.position = Vector3.Lerp(bottomSupportPoint, xSupportPoint, 0.5f);
         supportBeam.transform.localScale = new Vector3(0.75f, 0.75f, Vector3.Distance(bottomSupportPoint, xSupportPoint));
         supportBeam.transform.LookAt(xSupportPoint);
+        buildingPart.interBuildingPartObjects.Add(supportBeam.gameObject);
 
         DeletesIfAskedNicely supportBeam2 = Object.Instantiate(buildingPart.simpleBeam);
         supportBeam2.transform.SetParent(buildingPart.beamStorage.transform, false);
@@ -175,5 +195,6 @@ public static class BeamHelpers
         supportBeam2.transform.position = Vector3.Lerp(bottomSupportPoint, zSupportPoint, 0.5f);
         supportBeam2.transform.localScale = new Vector3(0.75f, 0.75f, Vector3.Distance(bottomSupportPoint, zSupportPoint));
         supportBeam2.transform.LookAt(zSupportPoint);
+        buildingPart.interBuildingPartObjects.Add(supportBeam2.gameObject);
     }
 }

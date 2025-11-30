@@ -1,19 +1,22 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Handles collisions with this collider's parent Brick
+/// </summary>
 [ExecuteInEditMode]
+[RequireComponent(typeof(BoxCollider))]
 public class BrickCollider : MonoBehaviour
 {
+    // Called when a collider enters this one
     void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.transform.root != gameObject.transform.root) {
-            return;
-        }
+        // If not part of the same BuildingPart, ignore
+        if (other.gameObject.transform.root != gameObject.transform.root) return;
 
         GameObject parentObject = gameObject.transform.parent.gameObject;
         Brick brick = parentObject.GetComponent<Brick>();
 
+        // If colliding object is a Quoin or a Window, queue changes to this collider's parent Brick
         if (other.gameObject.transform.parent.gameObject.GetComponent<Quoin>()) {
             Quoin quoin = other.gameObject.transform.parent.gameObject.GetComponent<Quoin>();
             Vector3 horizontalDirection = brick.transform.TransformDirection(Vector3.forward);

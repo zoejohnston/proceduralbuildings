@@ -55,15 +55,6 @@ public class BuildingPartColliders : MonoBehaviour
         return wallColliders;
     }
 
-    // TODO: add logic for roof
-    public bool PointIsInside(Vector3 point)
-    {
-        MainBuildingPartCollider mainSection = mainCollider.GetComponent<MainBuildingPartCollider>();
-        if (mainSection.PointIsInside(point)) return true;
-
-        return false;
-    }
-
     private void UpdateWallTopVertices(BuildingPart buildingPart)
     {
         Vector3[] vertices = wallMesh.vertices;
