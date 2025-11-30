@@ -13,7 +13,7 @@ public class Beam : MonoBehaviour
     public int collisionCount = 0;
 
     // Update is called once per frame
-    void Update()
+    void LateUpdate()
     {
         for (int i = 0; i < collisionCount; i++) {
             float horizontalMin = transform.InverseTransformPoint(horizontalMins[i]).z;

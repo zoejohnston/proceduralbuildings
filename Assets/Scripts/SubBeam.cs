@@ -19,7 +19,7 @@ public class SubBeam : MonoBehaviour
     public DeletesIfAskedNicely leftCrossBeam;
 
     // Update is called once per frame
-    void Update()
+    void LateUpdate()
     {
         for (int i = 0; i < collisionCount; i++) {
             float horizontalMin = transform.InverseTransformPoint(horizontalMins[i]).y;
@@ -44,10 +44,7 @@ public class SubBeam : MonoBehaviour
         collisionCount = 0;
 
         if (!isRoofBeam) TryAddCrossBeams();
-
-        if (delete) {
-            DestroyImmediate(gameObject);
-        }
+        if (delete) DestroyImmediate(gameObject);
     }
 
     public void TryAddCrossBeams()
@@ -59,7 +56,7 @@ public class SubBeam : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.up), out hit, 0.5f)) { 
             Transform parentTransform = hit.collider.gameObject.transform.parent;
 
-            if (parentTransform.gameObject.TryGetComponent(out Beam beam))
+            if (parentTransform.gameObject.TryGetComponent(out Beam beam) && parentTransform.root == transform.root)
             {
                 BuildingPart buildingPart = transform.root.gameObject.GetComponent<BuildingPart>();
                 float y = transform.TransformPoint(new Vector3(0.0f, 0.0f, -0.5f)).y;
@@ -83,7 +80,7 @@ public class SubBeam : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out hit, 0.5f)) { 
             Transform parentTransform = hit.collider.gameObject.transform.parent;
 
-            if (parentTransform.gameObject.TryGetComponent(out Beam beam))
+            if (parentTransform.gameObject.TryGetComponent(out Beam beam) && parentTransform.root == transform.root)
             {
                 BuildingPart buildingPart = transform.root.gameObject.GetComponent<BuildingPart>();
                 float y = transform.TransformPoint(new Vector3(0.0f, 0.0f, -0.5f)).y;
@@ -207,7 +204,7 @@ public class SubBeam : MonoBehaviour
 
         Vector3 startPoint = transform.TransformPoint(new Vector3(-0.025f, 0.0f, -0.5f));
         Vector3 endPoint = transform.TransformPoint(new Vector3(-0.025f, 0.0f, 0.5f));
-        LayerMask mask = LayerMask.GetMask("Windows", "Shingles");
+        LayerMask mask = LayerMask.GetMask("Windows");
         
         if (Physics.Raycast(startPoint, endPoint - startPoint, out hit, Vector3.Distance(startPoint, endPoint), mask)) {
             if (!isRoofBeam) ResizeBottom(transform.InverseTransformPoint(hit.point).z);

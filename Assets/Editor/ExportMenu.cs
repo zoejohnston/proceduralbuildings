@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -11,7 +10,14 @@ using System.Reflection;
 
 public class ExportMenu : MonoBehaviour
 {
-    // The code in this function is from https://discussions.unity.com/t/fbx-exporter-binary-export-doesnt-work-via-editor-scripting/841939/3
+    /// <summary>
+    /// Exports the GameObject <c>objectToExport</c> as an FBX file at file path <c>filePath</c>.
+    /// The FBX file is in binary format so that programs like Blender can open it. This is not an easy
+    /// thing to do in this version of Unity! I follow a workaround discussed here:
+    /// https://discussions.unity.com/t/fbx-exporter-binary-export-doesnt-work-via-editor-scripting/841939/3
+    /// </summary>
+    /// <param name="objectToExport">The GameObject to export as an FBX file.</param>
+    /// <param name="filePath">The filepath to export to.</param>
     private static void ExportWorkaround(GameObject objectToExport, string filePath)
     {
         string assemblyName = "Unity.Formats.Fbx.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
@@ -29,10 +35,13 @@ public class ExportMenu : MonoBehaviour
         exportObjectMethod.Invoke(null, new object[] { filePath, objectToExport, optionsInstance });
     }
 
+    /// <summary>
+    /// Exports the selected BuildingParts as an FBX file.
+    /// </summary>
     [MenuItem("Export/Export selected BuildingParts")]
     private static void ExportBuilding()
     {
-        //
+        // Builds a GameObject to export
         GameObject exportParent = new GameObject("Export");
 
         GameObject bricksToExport = new GameObject("Bricks");
@@ -41,8 +50,10 @@ public class ExportMenu : MonoBehaviour
         shinglesToExport.transform.SetParent(exportParent.transform);
         GameObject beamsToExport = new GameObject("Beams");
         beamsToExport.transform.SetParent(exportParent.transform);
+        GameObject panesToExport = new GameObject("Panes");
+        panesToExport.transform.SetParent(exportParent.transform);
 
-        //
+        // Get the selected BuildingParts
         GameObject[] selectedObjects = Selection.gameObjects;
         List<BuildingPart> buildingParts = new List<BuildingPart>();
 
@@ -50,10 +61,11 @@ public class ExportMenu : MonoBehaviour
             if (obj.TryGetComponent(out BuildingPart buildingPart)) buildingParts.Add(buildingPart);
         }
 
-        // 
+        // Combine the meshes from each BuildingParts
         CombineInstance[] brickInstances = new CombineInstance[buildingParts.Count];
         CombineInstance[] shingleInstances = new CombineInstance[buildingParts.Count];
         CombineInstance[] beamInstances = new CombineInstance[buildingParts.Count];
+        CombineInstance[] paneInstances = new CombineInstance[buildingParts.Count];
 
         for (int i = 0; i < buildingParts.Count; i++) {
             MeshFilter[] meshFilters = buildingParts[i].PrepForExport();
@@ -74,12 +86,17 @@ public class ExportMenu : MonoBehaviour
                 transform = Matrix4x4.identity
             };
 
+            paneInstances[i] = new CombineInstance {
+                mesh = meshFilters[3].sharedMesh,
+                transform = Matrix4x4.identity
+            };
+
             DestroyImmediate(meshFilters[0]);
             DestroyImmediate(meshFilters[1]);
             DestroyImmediate(meshFilters[2]);
+            DestroyImmediate(meshFilters[3]);
         }
 
-        //
         Mesh combinedBrickMesh = new Mesh();
         combinedBrickMesh.CombineMeshes(brickInstances);
         MeshFilter bricksToExportMeshFilter = bricksToExport.AddComponent<MeshFilter>();
@@ -95,7 +112,12 @@ public class ExportMenu : MonoBehaviour
         MeshFilter beamsToExportMeshFilter = beamsToExport.AddComponent<MeshFilter>();
         beamsToExportMeshFilter.sharedMesh = combinedBeamMesh;
 
-        //
+        Mesh combinedPaneMesh = new Mesh();
+        combinedPaneMesh.CombineMeshes(paneInstances);
+        MeshFilter panesToExportMeshFilter = panesToExport.AddComponent<MeshFilter>();
+        panesToExportMeshFilter.sharedMesh = combinedPaneMesh;
+
+        // The filename used is based on the name of the scene you are workin in.
         string fileName = "Exports/" + SceneManager.GetActiveScene().name + ".fbx";
         string filePath = Path.Combine(Application.dataPath, fileName);
 

@@ -15,7 +15,7 @@ public class Shingle : MonoBehaviour
     public int collisionCount = 0;
 
     // Update is called once per frame
-    void Update()
+    void LateUpdate()
     {
         for (int i = 0; i < collisionCount; i++) {
             float horizontalMin = transform.InverseTransformPoint(horizontalMins[i]).x;
@@ -31,6 +31,11 @@ public class Shingle : MonoBehaviour
         if (delete) {
             DestroyImmediate(gameObject);
         }
+    }
+
+    public void DisableCollisions()
+    {
+        transform.GetChild(0).gameObject.SetActive(false);;
     }
 
     public void DeletePls()

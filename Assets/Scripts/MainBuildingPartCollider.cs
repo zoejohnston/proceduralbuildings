@@ -31,7 +31,7 @@ public class MainBuildingPartCollider : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.transform.root != gameObject.transform.root) {
+        /*if (other.gameObject.transform.root != gameObject.transform.root) {
             if (other.gameObject.transform.parent.gameObject.TryGetComponent<Brick>(out Brick brick)) {
                 if (AllPointsAreInside(other.gameObject.transform, 0.5f, 0.5f, 0.5f)) {
                     brick.DeletePls();
@@ -57,6 +57,6 @@ public class MainBuildingPartCollider : MonoBehaviour
                     ridgeShingle.DeletePls();
                 }
             }
-        }
+        }*/
     }
 }

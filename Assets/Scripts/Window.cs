@@ -1,9 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Assertions.Must;
-using System;
 
 [ExecuteInEditMode]
 [SelectionBase]
@@ -100,6 +95,7 @@ public class Window : MonoBehaviour
 
             for (int j = 0; j < numShinglesWide; j++) {
                 Shingle newShingle = Instantiate(shingle);
+                newShingle.DisableCollisions();
 
                 newShingle.transform.position = new Vector3(
                     localStartPosition.x,
@@ -135,7 +131,7 @@ public class Window : MonoBehaviour
         for (int i = 0; i < numShinglesLong; i++)
         {
             Shingle newShingle = Instantiate(shingle);
-            //newShingle.SwitchToLeftCornerMesh();
+            newShingle.DisableCollisions();
 
             newShingle.transform.position = new Vector3(
                 localStartPosition.x - (i * lengthOfShingle),

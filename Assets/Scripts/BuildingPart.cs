@@ -1,12 +1,12 @@
 using UnityEngine;
 
 [ExecuteInEditMode]
+[SelectionBase]
 public class BuildingPart : MonoBehaviour
 {
     /*  Private variables */
 
     //private float shingleSize = 0.1f;
-    private bool updatedLastFrame = false;
 
     [SerializeField]
     private Vector3 innerScale = Vector3.one;
@@ -130,7 +130,7 @@ public class BuildingPart : MonoBehaviour
     }
     
     /// <summary>
-    /// Returns the height of the window at <c>position</c> above the wall.
+    /// Used to get the height above the wall of the window at <c>position</c>.
     /// </summary>
     /// <param name="position">The position of the window.</param>
     public float GetDormerHeight(Vector3 position)
@@ -153,10 +153,10 @@ public class BuildingPart : MonoBehaviour
     }
 
     /// <summary>
-    /// TODO.
+    /// Returns true if and only if this building part is floating above the ground.
     /// </summary>
-    public void DistanceToGround() {
-
+    public bool IsAboveGround() {
+        return transform.position.y - (innerScale.y / 2.0f) > 0.01f;
     }
 
 
@@ -187,8 +187,7 @@ public class BuildingPart : MonoBehaviour
         }
 
         if (scaleUpdated) {   
-            Rebuild();
-        } else if (updatedLastFrame) {   
+            Rebuild(); 
             HandleInteractions();
         }
     }
@@ -207,12 +206,22 @@ public class BuildingPart : MonoBehaviour
     /// </summary>
     private void Rebuild() {
         // Getting rid of all existing bricks, beams, and shingles
-        foreach (Transform childTransform in brickStorage.transform) {
-            GameObject childObject = childTransform.gameObject;
+        
+        /*if (brickStorage.TryGetComponent(out BrickPool brickPool)) {
+            foreach (Transform childTransform in brickStorage.transform) {
+                GameObject childObject = childTransform.gameObject;
 
-            if (childObject.TryGetComponent(out Quoin quoinToDelete)) quoinToDelete.DeletePls();
-            if (childObject.TryGetComponent(out Brick brickToDelete)) brickToDelete.DeletePls();
-        }
+                if (childObject.TryGetComponent(out Quoin quoin)) brickPool.AddToQuoinPool(quoin);
+                if (childObject.TryGetComponent(out Brick brick)) brickPool.AddToBrickPool(brick);
+            }
+        } else {*/
+            foreach (Transform childTransform in brickStorage.transform) {
+                GameObject childObject = childTransform.gameObject;
+
+                if (childObject.TryGetComponent(out Quoin quoinToDelete)) quoinToDelete.DeletePls();
+                if (childObject.TryGetComponent(out Brick brickToDelete)) brickToDelete.DeletePls();
+            }
+        //}
 
         foreach (Transform childTransform in shingleStorage.transform) {
             GameObject childObject = childTransform.gameObject;
@@ -241,20 +250,16 @@ public class BuildingPart : MonoBehaviour
         InitRoof();
         if (woodFramed) InitBeams();
 
-        updatedLastFrame = true;
         scaleUpdated = false;
     }
 
     /// <summary>
     /// Steps forward the physics simulation, allowing components to detect and handle collisions.
     /// </summary>
-    private void HandleInteractions()
-    {
+    private void HandleInteractions() {
         Physics.simulationMode = SimulationMode.Script;
         Physics.Simulate(Time.fixedDeltaTime);
         Physics.simulationMode = SimulationMode.FixedUpdate;
-
-        updatedLastFrame = false;
     }
 
     /// <summary>
@@ -264,6 +269,8 @@ public class BuildingPart : MonoBehaviour
     {
         float shrink = 0.2f;
         float height = innerScale.y;
+
+        if (!brickStorage.TryGetComponent(out BrickPool brickPool)) return;
 
         if (!woodFramed) {
             BrickHelpers.InitQuoins(1.0f, height, 1.0f, this);
@@ -299,6 +306,27 @@ public class BuildingPart : MonoBehaviour
 
         BrickHelpers.BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 0.0f, shrink / 2.0f, this);
         BrickHelpers.BuildBrickWall(numBricksTall, numBricksWide, heightOfBrick, widthOfBrick, noise, 180.0f, shrink / 2.0f, this);
+
+        if (IsAboveGround()) {
+            /*RaycastHit hit;
+            LayerMask mask = LayerMask.GetMask("BuildingPart");
+            Vector3 wallScale = new Vector3(innerScale.x - 0.15f, innerScale.y, innerScale.z - 0.15f);
+
+            for (int i = -1; i < 2; i += 2) {
+                for (int j = -1; j < 2; j += 2) {
+                    for (int k = -1; k < 2; k += 2) {
+                        int otherK = -1 * k;
+                        Vector3 corner = transform.TransformPoint(new Vector3(i * wallScale.x, -wallScale.y, j * wallScale.z) / 2.0f);
+                        Vector3 otherCorner = transform.TransformPoint(new Vector3(k * i * wallScale.x, -wallScale.y, otherK * j * wallScale.z) / 2.0f);
+                        Vector3 direction = otherCorner - corner;
+
+                        if (Physics.Raycast(corner - new Vector3(0.0f, 0.001f, 0.0f), direction, out hit, direction.magnitude, mask)) { 
+                            if (hit.collider.transform.root != transform) BeamHelpers.BuildSupport(corner, hit.point, this);
+                        }
+                    }
+                }
+            }*/
+        }
     }
 
     /// <summary>
@@ -329,6 +357,36 @@ public class BuildingPart : MonoBehaviour
         BeamHelpers.PlaceHorizontalBeams(numBeamsTall - 1, heightOfBeam, innerScale.x - shrink, width, true, -1.0f, this);
 
         BeamHelpers.PlaceCornerBeams(innerScale.y, width, innerScale.x - shrink, this);
+
+        if (IsAboveGround()) {
+            RaycastHit hit;
+            LayerMask mask = LayerMask.GetMask("BuildingPart");
+            Vector3 wallScale = new Vector3(innerScale.x - 0.15f, innerScale.y, innerScale.z - 0.15f);
+
+            for (int i = -1; i < 2; i += 2) {
+                for (int j = -1; j < 2; j += 2) {
+                    Vector3 corner = transform.TransformPoint(new Vector3(i * wallScale.x, -wallScale.y, j * wallScale.z) / 2.0f);
+                    bool wasAbleToSupport = false;
+
+                    if (Physics.CheckSphere(corner - new Vector3(0.0f, 0.001f, 0.0f), 0.00001f, mask)) continue;
+
+                    for (int k = -1; k < 2; k += 2) {
+                        int otherK = -1 * k;
+                        Vector3 otherCorner = transform.TransformPoint(new Vector3(k * i * wallScale.x, -wallScale.y, otherK * j * wallScale.z) / 2.0f);
+                        Vector3 direction = otherCorner - corner;
+
+                        if (Physics.Raycast(corner - new Vector3(0.0f, 0.001f, 0.0f), direction, out hit, 0.3f, mask)) { 
+                            BeamHelpers.BuildSupport(corner, hit.point, this);
+                            wasAbleToSupport = true;
+                        }
+                    }
+
+                    if (!wasAbleToSupport) {
+                        BeamHelpers.BuildSignificantSupport(corner - new Vector3(0.0f, 0.001f, 0.0f), i, j, this);
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -336,14 +394,14 @@ public class BuildingPart : MonoBehaviour
     /// </summary>
     private void InitRoof()
     {
-        float amount = innerScale.z / 2.0f;
+        float ridgeAmount = innerScale.z / 2.0f;
 
         if (ridgeLength > 0.2f) {
-            amount *= ridgeLength;
-            ShingleHelpers.PlaceShingles(innerScale.z, innerScale.x / 2.0f, amount, false, 1.0f, this);
-            ShingleHelpers.PlaceShingles(innerScale.z, innerScale.x / 2.0f, amount, false, -1.0f, this);
-            ShingleHelpers.PlaceShingles(innerScale.x, amount, innerScale.x / 2.0f, true, 1.0f, this);
-            ShingleHelpers.PlaceShingles(innerScale.x, amount, innerScale.x / 2.0f, true, -1.0f, this);
+            ridgeAmount *= ridgeLength;
+            ShingleHelpers.PlaceShingles(innerScale.z, innerScale.x / 2.0f, ridgeAmount, false, 1.0f, this);
+            ShingleHelpers.PlaceShingles(innerScale.z, innerScale.x / 2.0f, ridgeAmount, false, -1.0f, this);
+            ShingleHelpers.PlaceShingles(innerScale.x, ridgeAmount, innerScale.x / 2.0f, true, 1.0f, this);
+            ShingleHelpers.PlaceShingles(innerScale.x, ridgeAmount, innerScale.x / 2.0f, true, -1.0f, this);
             ShingleHelpers.PlaceTopRidgeShingles(ridgeLength, this);
         } else {
             ShingleHelpers.PlaceShinglesSimple(innerScale.z, innerScale.x / 2.0f, false, 1.0f, this);
