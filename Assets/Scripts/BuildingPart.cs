@@ -10,18 +10,21 @@ public class BuildingPart : MonoBehaviour
 {
     /*  Private variables */
 
-    //private float shingleSize = 0.1f;
-
     [SerializeField]
+    // The size of the building part
     private Vector3 innerScale = Vector3.one;
-    [SerializeField]
-    public List<GameObject> interBuildingPartObjects = new List<GameObject>();
-    private bool scaleUpdated = false;
 
+    // A list of objects that should be updated more often than most
+    [SerializeField, HideInInspector]
+    public List<GameObject> interBuildingPartObjects = new List<GameObject>();
+
+    // Indicates if we should rebuild the building on the next frame
+    private bool scaleUpdated = false;
 
     /*  Public variables */
 
     [Header("Prefabs")]
+    // Prefabs used to build the BuildingPart
     public Brick brick;
     public Quoin quoin;
     public Shingle shingle;
@@ -30,14 +33,17 @@ public class BuildingPart : MonoBehaviour
     public SubBeam subBeam;
     public DeletesIfAskedNicely simpleBeam;
 
-    [Header("Storage")]
+    // Quick access to storage transforms
+    [HideInInspector]
     public GameObject brickStorage;
+    [HideInInspector]
     public GameObject shingleStorage;
+    [HideInInspector]
     public GameObject beamStorage;
+    [HideInInspector]
     public GameObject windowStorage;
 
     [Header("Roof")]
-
     // A value describing the curve of the roof.
     // The height of the roof will be equal to Mathf.Pow(x, roofCurve) * roofHeight, where x is a value between 0 and 1.
     [Range(0.5f, 1.75f)]
@@ -53,17 +59,24 @@ public class BuildingPart : MonoBehaviour
     public float ridgeLength = 0.5f;
 
     [Header("Walls")]
-    // Walls are framed in wood if true. 
-    public bool woodFramed = false;
-    
     // The default width of a brick.
-    [Range(0.5f, 2.0f)]
-    public float defaultBrickWidth = 0.1f;
+    [Range(0.05f, 0.2f)]
+    public float defaultBrickWidth = 0.15f;
     
     // The default height of a brick.
-    [Range(0.5f, 2.0f)]
+    [Range(0.05f, 0.2f)]
     public float defaultBrickHeight = 0.1f;
 
+    // The default width of a quoin.
+    [Range(0.15f, 0.25f)]
+    public float defaultQuoinWidth = 0.2f;
+    
+    // The default height of a quoin.
+    [Range(0.1f, 0.25f)]
+    public float defaultQuoinHeight = 0.15f;
+
+    // Walls are framed in wood if true. 
+    public bool woodFramed = false;
 
     /* Public functions */
 
@@ -299,13 +312,17 @@ public class BuildingPart : MonoBehaviour
             LayerMask mask = LayerMask.GetMask("BuildingPart");
             Vector3 wallScale = new Vector3(innerScale.x - 0.15f, innerScale.y, innerScale.z - 0.15f);
 
+            // For each corner of the building part, we:
             for (int i = -1; i < 2; i += 2) {
                 for (int j = -1; j < 2; j += 2) {
                     Vector3 corner = transform.TransformPoint(new Vector3(i * wallScale.x, -wallScale.y, j * wallScale.z) / 2.0f);
                     bool wasAbleToSupport = false;
 
+                    // 1. check if is inside a building part. If it is, then nothing needs to be done
                     if (Physics.CheckSphere(corner - new Vector3(0.0f, 0.001f, 0.0f), 0.00001f, mask)) continue;
 
+                    // 2. check if this building part is overlapping with some other building part and if the corner is close enough
+                    //    that we can build a small support between the two to visually support this corner.
                     for (int k = -1; k < 2; k += 2) {
                         int otherK = -1 * k;
                         Vector3 otherCorner = transform.TransformPoint(new Vector3(k * i * wallScale.x, -wallScale.y, otherK * j * wallScale.z) / 2.0f);
@@ -317,6 +334,7 @@ public class BuildingPart : MonoBehaviour
                         }
                     }
 
+                    // 3. if all else fails, we build a big support down to the ground
                     if (!wasAbleToSupport) {
                         BeamHelpers.BuildSignificantSupport(corner - new Vector3(0.0f, 0.001f, 0.0f), i, j, this);
                     }
@@ -330,6 +348,7 @@ public class BuildingPart : MonoBehaviour
 
             bool[,] cornerSupported = {{false, false}, {false, false}};
 
+            // For each corner of the building part, we:
             for (int i = -1; i < 2; i += 2) {
                 for (int j = -1; j < 2; j += 2) {
                     int xFlip = i == j ? -1 : 1;
@@ -337,10 +356,13 @@ public class BuildingPart : MonoBehaviour
 
                     Vector3 corner = transform.TransformPoint(new Vector3(i * wallScale.x, -wallScale.y, j * wallScale.z) / 2.0f);
 
+                    // 1. make note of if this corner is inside a building part
                     if (Physics.CheckSphere(corner - new Vector3(0.0f, 0.001f, 0.0f), 0.00001f, mask)) {
                         cornerSupported[(i + 1) / 2, (j + 1) / 2] = true;
                     }
 
+                    // 2. every 0.1f between corner and rightCorner, we will check if this building part is overlapping with some 
+                    // other building part and if we can build a small support between the two
                     Vector3 rightCorner = transform.TransformPoint(new Vector3(xFlip * i * wallScale.x, -wallScale.y, zFlip * j * wallScale.z) / 2.0f);
                     Vector3 leftCorner = transform.TransformPoint(new Vector3(-1 * xFlip * i * wallScale.x, -wallScale.y, -1 * zFlip * j * wallScale.z) / 2.0f);
                     Vector3 direction = leftCorner - corner;
@@ -355,6 +377,8 @@ public class BuildingPart : MonoBehaviour
                         Vector3 lerped = Vector3.Lerp(raycastStart, raycastEnd, k / (float) numSupports);
                         if (Physics.Raycast(lerped, direction, out hit, 0.2f, mask)) { 
                             BrickHelpers.BuildSupport(lerped, hit.point, this);
+
+                            // 3. if we are able to support the corners with small supports we make note of it
                             if (k == 0) cornerSupported[(i + 1) / 2, (j + 1) / 2] = true;
                             if (k == numSupports) cornerSupported[((xFlip * i) + 1) / 2, ((zFlip * j) + 1) / 2] = true;
                         }
@@ -362,6 +386,7 @@ public class BuildingPart : MonoBehaviour
                 }
             }
 
+            // Then we loop through the corners again and build support pillars for any unsupported corners
             for (int i = -1; i < 2; i += 2) {
                 for (int j = -1; j < 2; j += 2) {
                     Vector3 corner = transform.TransformPoint(new Vector3(i * wallScale.x, -wallScale.y, j * wallScale.z) / 2.0f);
@@ -400,11 +425,11 @@ public class BuildingPart : MonoBehaviour
             BrickHelpers.InitQuoins(-1.0f, height, -1.0f, this);
         }
         
-        int numBricksTall = Mathf.RoundToInt(height / 0.1f);
+        int numBricksTall = Mathf.RoundToInt(height / defaultBrickHeight);
         float heightOfBrick = height / numBricksTall;
 
         float width = innerScale.x - shrink;
-        int numBricksWide = Mathf.RoundToInt(width / 0.15f);
+        int numBricksWide = Mathf.RoundToInt(width / defaultBrickWidth);
         float widthOfBrick = width / numBricksWide;
 
         float[,] noise = new float[numBricksTall, numBricksWide];
@@ -415,11 +440,11 @@ public class BuildingPart : MonoBehaviour
 
         float positionOnRoof = 1.0f - (((innerScale.x / 2.0f) - 0.05f) / (innerScale.x / 2.0f));
         height = innerScale.y + (Mathf.Pow(positionOnRoof, roofCurve) * roofHeight);
-        numBricksTall = Mathf.RoundToInt(height / 0.1f);
+        numBricksTall = Mathf.RoundToInt(height / defaultBrickHeight);
         heightOfBrick = height / numBricksTall;
 
         width = innerScale.z - shrink;
-        numBricksWide = Mathf.RoundToInt(width / 0.15f);
+        numBricksWide = Mathf.RoundToInt(width / defaultBrickWidth);
         widthOfBrick = width / numBricksWide;
 
         noise = new float[numBricksTall, numBricksWide];
@@ -474,8 +499,8 @@ public class BuildingPart : MonoBehaviour
             ShingleHelpers.PlaceShingles(innerScale.x, ridgeAmount, innerScale.x / 2.0f, true, -1.0f, this);
             ShingleHelpers.PlaceTopRidgeShingles(ridgeLength, this);
         } else {
-            ShingleHelpers.PlaceShinglesSimple(innerScale.z, innerScale.x / 2.0f, false, 1.0f, this);
-            ShingleHelpers.PlaceShinglesSimple(innerScale.z, innerScale.x / 2.0f, false, -1.0f, this);
+            ShingleHelpers.PlaceShinglesSimple(innerScale.z, innerScale.x / 2.0f, 1.0f, this);
+            ShingleHelpers.PlaceShinglesSimple(innerScale.z, innerScale.x / 2.0f, -1.0f, this);
             ShingleHelpers.PlaceTopRidgeShingles(0.0f, this);
             BrickHelpers.MoreBricks(innerScale.x, 1.0f, this);
             BrickHelpers.MoreBricks(innerScale.x, -1.0f, this);

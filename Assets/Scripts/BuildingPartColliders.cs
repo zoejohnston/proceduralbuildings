@@ -1,14 +1,19 @@
 using UnityEngine;
 
+/// <summary>
+/// Supports the wall and roof colliders of a building part.
+/// </summary>
 [ExecuteInEditMode]
 public class BuildingPartColliders : MonoBehaviour
 {
     [Header("Meshes")]
+    // 
     public Mesh wallMesh;
     public Mesh roofRidgeMesh;
     public Mesh roofMesh;
 
     [Header("Children")]
+    // 
     public GameObject wallParent;
     public GameObject roofParent;
     public GameObject mainCollider;
@@ -30,6 +35,9 @@ public class BuildingPartColliders : MonoBehaviour
     [SerializeField]
     Mesh roofMeshInternal;
 
+    /// <summary>
+    /// Returns all the wall colliders for this building part.
+    /// </summary>
     public WallCollider[] GetWallColliders()
     {
         BuildingPart buildingPart = transform.parent.gameObject.GetComponent<BuildingPart>();
@@ -51,6 +59,9 @@ public class BuildingPartColliders : MonoBehaviour
         return wallColliders;
     }
 
+    /// <summary>
+    /// Updates the top wall collider mesh so that it reflects the curve of the roof.
+    /// </summary>
     private void UpdateWallTopVertices(BuildingPart buildingPart)
     {
         Vector3[] vertices = wallMesh.vertices;
@@ -76,6 +87,10 @@ public class BuildingPartColliders : MonoBehaviour
         wallTops[1].GetComponent<MeshCollider>().sharedMesh = wallTopMesh;
     }
     
+    /// <summary>
+    /// Updates the roof collider mesh so that it reflects the curve of the roof. Works with
+    /// UpdateRoofVertices to cover the whole roof.
+    /// </summary>
     private void UpdateRidgeRoofVertices(BuildingPart buildingPart)
     {
         Vector3[] vertices = roofRidgeMesh.vertices;
@@ -103,6 +118,10 @@ public class BuildingPartColliders : MonoBehaviour
         ridgeRoofs[1].GetComponent<MeshCollider>().sharedMesh = ridgeRoofMeshInternal;
     }
     
+    /// <summary>
+    /// Updates the roof collider mesh so that it reflects the curve of the roof. Works with
+    /// UpdateRidgeRoofVertices to cover the whole roof.
+    /// </summary>
     private void UpdateRoofVertices(BuildingPart buildingPart)
     {
         Vector3[] vertices = roofMesh.vertices;
@@ -123,6 +142,9 @@ public class BuildingPartColliders : MonoBehaviour
         roofs[1].GetComponent<MeshCollider>().sharedMesh = roofMeshInternal;
     }
 
+    /// <summary>
+    /// Updates the wall and roof colliders for this building part.
+    /// </summary>
     private void UpdateColliders()
     {
         BuildingPart buildingPart = transform.parent.gameObject.GetComponent<BuildingPart>();

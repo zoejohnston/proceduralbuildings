@@ -4,7 +4,7 @@ using UnityEngine;
 /// Handles collisions with this collider's parent Brick
 /// </summary>
 [ExecuteInEditMode]
-[RequireComponent(typeof(BoxCollider))]
+[RequireComponent(typeof(BoxCollider), typeof(Rigidbody))]
 public class BrickCollider : MonoBehaviour
 {
     // Called when a collider enters this one

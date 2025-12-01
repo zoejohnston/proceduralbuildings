@@ -4,7 +4,7 @@ using UnityEngine;
 /// Handles collisions with this collider's parent Shingle
 /// </summary>
 [ExecuteInEditMode]
-[RequireComponent(typeof(BoxCollider))]
+[RequireComponent(typeof(BoxCollider), typeof(Rigidbody))]
 public class ShingleCollider : MonoBehaviour
 {
     void OnTriggerEnter(Collider other)

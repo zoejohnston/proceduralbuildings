@@ -7,7 +7,7 @@ using UnityEngine;
 [ExecuteInEditMode]
 public class Brick : MonoBehaviour
 {
-    // Setting this to true will let the Beam know to delete itself on the next frame
+    // Setting this to true will let the Brick know to delete itself on the next frame
     private bool delete = false;
 
     // Stores information that will be used to determine if this brick should be split in two for
@@ -16,8 +16,8 @@ public class Brick : MonoBehaviour
     public float splitLocation = 0.0f;
     public bool shouldntSplit = true;
 
-    // Used to keep track of updates to the beam that need to happen on the next frame
-    // See QueueBeamCollisions() for more info
+    // Used to keep track of updates to the brick that need to happen on the next frame
+    // See QueueBrickCollisions() for more info
     public List<Vector3> horizontalMins = new List<Vector3>();
     public List<Vector3> horizontalMaxes = new List<Vector3>();
     public List<Vector3> verticalMins = new List<Vector3>();
@@ -70,18 +70,19 @@ public class Brick : MonoBehaviour
     {
         delete = true;
         gameObject.transform.GetChild(1).gameObject.GetComponent<MeshRenderer>().enabled = false;
+        gameObject.transform.GetChild(0).gameObject.SetActive(false);
     }
 
     /// <summary>
     /// Queues changes to this Brick caused by collisions. 
     /// </summary>
-    /// <param name="horizontalMin">Used to describe the size and location of the object this Beam collided with.
+    /// <param name="horizontalMin">Used to describe the size and location of the object this Brick collided with.
     /// This parameter stores a point representing the lefthand side of the collider. </param>
-    /// <param name="horizontalMax">Used to describe the size and location of the object this Beam collided with.
+    /// <param name="horizontalMax">Used to describe the size and location of the object this Brick collided with.
     /// This parameter stores a point representing the righthand side of the collider. </param>
-    /// <param name="verticalMin">Used to describe the size and location of the object this Beam collided with.
+    /// <param name="verticalMin">Used to describe the size and location of the object this Brick collided with.
     /// This parameter stores a point representing the bottom of the collider. </param>
-    /// <param name="verticalMax">Used to describe the size and location of the object this Beam collided with.
+    /// <param name="verticalMax">Used to describe the size and location of the object this Brick collided with.
     /// This parameter stores a point representing the top of the collider. </param>
     public void QueueBrickCollisions(Vector3 horizontalMin, Vector3 horizontalMax, Vector3 verticalMin, Vector3 verticalMax)
     {
@@ -93,7 +94,7 @@ public class Brick : MonoBehaviour
     }
 
     /// <summary>
-    /// Scales and translates this Beam so that the righhand side is unaffected but the lefthand side is moved inward by <c>p</c>.
+    /// Scales and translates this Brick so that the righhand side is unaffected but the lefthand side is moved inward by <c>p</c>.
     /// </summary>
     /// <param name="p">The amount to move the lefthand side by.</param>
     public void ResizeLeft(float p)
@@ -106,7 +107,7 @@ public class Brick : MonoBehaviour
     }
 
     /// <summary>
-    /// Scales and translates this Beam so that the lefthand side is unaffected but the righthand side is moved inward by <c>p</c>.
+    /// Scales and translates this Brick so that the lefthand side is unaffected but the righthand side is moved inward by <c>p</c>.
     /// </summary>
     /// <param name="p">The amount to move the righthand side by.</param>
     public void ResizeRight(float p)
@@ -119,7 +120,7 @@ public class Brick : MonoBehaviour
     }
 
     /// <summary>
-    /// Scales and translates this Beam so that the bottom is unaffected but the top is moved inward by <c>p</c>.
+    /// Scales and translates this Brick so that the bottom is unaffected but the top is moved inward by <c>p</c>.
     /// </summary>
     /// <param name="p">The amount to move the top by.</param>
     public void ResizeTop(float p)
@@ -133,7 +134,7 @@ public class Brick : MonoBehaviour
     }
 
     /// <summary>
-    /// Scales and translates this Beam so that the top is unaffected but the bottom is moved inward by <c>p</c>.
+    /// Scales and translates this Brick so that the top is unaffected but the bottom is moved inward by <c>p</c>.
     /// </summary>
     /// <param name="p">The amount to move the bottom by.</param>
     public void ResizeBottom(float p)

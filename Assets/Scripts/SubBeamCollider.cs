@@ -4,6 +4,7 @@ using UnityEngine;
 /// Handles collisions with this collider's parent SubBeam
 /// </summary>
 [ExecuteInEditMode]
+[RequireComponent(typeof(BoxCollider), typeof(Rigidbody))]
 public class SubBeamCollider : MonoBehaviour
 {   
     void OnTriggerEnter(Collider other)

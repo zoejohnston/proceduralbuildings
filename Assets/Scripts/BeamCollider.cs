@@ -4,6 +4,7 @@ using UnityEngine;
 /// Handles collisions with this collider's parent Beam
 /// </summary>
 [ExecuteInEditMode]
+[RequireComponent(typeof(BoxCollider), typeof(Rigidbody))]
 public class BeamCollider : MonoBehaviour
 {   
     // Called when a collider enters this one
