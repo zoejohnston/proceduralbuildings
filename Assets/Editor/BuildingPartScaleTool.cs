@@ -4,6 +4,9 @@ using UnityEditor.EditorTools;
 using System;
 using System.Collections.Generic;
 
+/// <summary>
+/// Adds BuildingPartScaleTool to a new EditorToolContext.
+/// </summary>
 [EditorToolContext("Building Part", typeof(BuildingPart))]
 public class BuildingPartScaleContext : EditorToolContext
 {
@@ -11,8 +14,7 @@ public class BuildingPartScaleContext : EditorToolContext
     
     protected override Type GetEditorToolType(Tool tool)
     {
-        switch (tool)
-        {
+        switch (tool) {
             case Tool.Scale:
                 return typeof(BuildingPartScaleTool);
             default:
@@ -21,6 +23,9 @@ public class BuildingPartScaleContext : EditorToolContext
     }
 }
 
+/// <summary>
+/// A scaling tool for BuildingParts that only affects their innerScale.
+/// </summary>
 public class BuildingPartScaleTool : EditorTool
 {
     struct Selected

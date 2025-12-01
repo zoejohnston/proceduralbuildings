@@ -8,6 +8,9 @@ using System;
 using System.Linq;
 using System.Reflection;
 
+/// <summary>
+/// Adds a MenuItem that allows you to export buildings.
+/// </summary>
 public class ExportMenu : MonoBehaviour
 {
     /// <summary>

@@ -1,22 +1,34 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Implements the behaviour expected of a small vertical beam.
+/// </summary>
 [ExecuteInEditMode]
 public class SubBeam : MonoBehaviour
-{
+{   
+    // Setting this to true will let the Beam know to delete itself on the next frame
     private bool delete = false;
+    // If this sub beam has already been moved by a collision, its behaviour should change.
+    // This helps to keep track of that!
     public bool wasMovedByCollision = false;
+    // Sub beams placed on the wall of an A-frame roof shouldn't split in two in the same way
+    // as regular sub beams do. This is used to define how this sub beam should behave.
     public bool isRoofBeam = false;
 
+    // Used to keep track of updates to the beam that need to happen on the next frame
+    // See QueueBeamCollisions() for more info
     public List<Vector3> horizontalMins = new List<Vector3>();
     public List<Vector3> horizontalMaxes = new List<Vector3>();
     public List<Vector3> verticalMins = new List<Vector3>();
     public List<Vector3> verticalMaxes = new List<Vector3>();
     public int collisionCount = 0;
 
+    // If possible, these will be populated with angled support beams attached to this sub beam
     public DeletesIfAskedNicely rightCrossBeam;
     public DeletesIfAskedNicely leftCrossBeam;
+
+    /* Called by Unity Runtime */
 
     // Update is called once per frame
     void LateUpdate()
@@ -46,8 +58,40 @@ public class SubBeam : MonoBehaviour
         if (!isRoofBeam) TryAddCrossBeams();
         if (delete) DestroyImmediate(gameObject);
     }
+    
+    /* Public Functions */
 
-    public void TryAddCrossBeams()
+    /// <summary>
+    /// Queues changes to this SubBeam caused by collisions. 
+    /// </summary>
+    public void QueueBeamCollisions(Vector3 horizontalMin, Vector3 horizontalMax, Vector3 verticalMin, Vector3 verticalMax)
+    {
+        horizontalMins.Add(horizontalMin);
+        horizontalMaxes.Add(horizontalMax);
+        verticalMins.Add(verticalMin);
+        verticalMaxes.Add(verticalMax);
+        collisionCount++;
+    }
+
+    /// <summary>
+    /// Lets this SubBeam know to delete itself on the next frame update, hides it from view, and 
+    /// deletes any cross beams it has created.
+    /// </summary>
+    public void DeletePls()
+    {
+        if (rightCrossBeam != null) rightCrossBeam.DeletePls();
+        if (leftCrossBeam != null) leftCrossBeam.DeletePls();
+        
+        delete = true;
+        gameObject.transform.GetChild(1).gameObject.GetComponent<MeshRenderer>().enabled = false;
+    }
+
+    /* Private Functions */
+
+    /// <summary>
+    /// Adds cross beams to the right and left of this SubBeam if possible.
+    /// </summary>
+    private void TryAddCrossBeams()
     {
         if (rightCrossBeam != null) return;
         RaycastHit hit;
@@ -56,8 +100,7 @@ public class SubBeam : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.up), out hit, 0.5f)) { 
             Transform parentTransform = hit.collider.gameObject.transform.parent;
 
-            if (parentTransform.gameObject.TryGetComponent(out Beam beam) && parentTransform.root == transform.root)
-            {
+            if (parentTransform.gameObject.TryGetComponent(out Beam beam) && parentTransform.root == transform.root) {
                 BuildingPart buildingPart = transform.root.gameObject.GetComponent<BuildingPart>();
                 float y = transform.TransformPoint(new Vector3(0.0f, 0.0f, -0.5f)).y;
 
@@ -100,26 +143,13 @@ public class SubBeam : MonoBehaviour
         }
     }
 
-    public void QueueBeamCollisions(Vector3 horizontalMin, Vector3 horizontalMax, Vector3 verticalMin, Vector3 verticalMax)
+    /// <summary>
+    /// Handles queued collisions with this SubBeam. 
+    /// </summary>
+    private void HandleBeamCollisions(float horizontalMin, float horizontalMax, float verticalMin, float verticalMax, Vector3 windowBase, bool doCrossBeams)
     {
-        horizontalMins.Add(horizontalMin);
-        horizontalMaxes.Add(horizontalMax);
-        verticalMins.Add(verticalMin);
-        verticalMaxes.Add(verticalMax);
-        collisionCount++;
-    }
-
-    public void DeletePls()
-    {
-        if (rightCrossBeam != null) rightCrossBeam.DeletePls();
-        if (leftCrossBeam != null) leftCrossBeam.DeletePls();
-        
-        delete = true;
-        gameObject.transform.GetChild(1).gameObject.GetComponent<MeshRenderer>().enabled = false;
-    }
-
-    void HandleBeamCollisions(float horizontalMin, float horizontalMax, float verticalMin, float verticalMax, Vector3 windowBase, bool doCrossBeams)
-    {
+        // If this SubBeam has already been split, or if is part of the roof, just adjust the top or
+        // bottom of this SubBeam around the collider
         if (wasMovedByCollision || isRoofBeam) {
             if (-0.025f > horizontalMin && 0.025f < horizontalMax) {
                 if (verticalMax < -0.5f && verticalMin > 0.5f) { 
@@ -137,12 +167,16 @@ public class SubBeam : MonoBehaviour
                     ResizeTop(verticalMin);
                 }
             }
+        // Otherwise, we want to split the sub beam in two, with one sub beam on each (left and right) side of the collider.
+        // We also add cross beams beneath the window if possible.
         } else {
             if (-0.025f > horizontalMin && 0.025f < horizontalMax) {
+                // Split
                 SubBeam newBeamLeft = CopyBeam(gameObject);
                 bool newBeamHasNoCollisions = newBeamLeft.MoveTo(horizontalMax + 0.02f);
                 bool beamHasNoCollisions = MoveTo(horizontalMin - 0.02f);
 
+                // Add cross beams
                 doCrossBeams = doCrossBeams && newBeamHasNoCollisions && beamHasNoCollisions;
 
                 if (!doCrossBeams) return;
@@ -176,7 +210,10 @@ public class SubBeam : MonoBehaviour
         }
     }
 
-    public void ResizeBottom(float p)
+    /// <summary>
+    /// Scales and translates this SubBeam so that the top is unaffected but the bottom is moved inward by <c>p</c>.
+    /// </summary>
+    private void ResizeBottom(float p)
     {
         p -= 0.00001f;
         float multiplier = Mathf.Abs(p + 0.5f);
@@ -185,7 +222,10 @@ public class SubBeam : MonoBehaviour
         transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, multiplier * transform.localScale.z);
     }
 
-    public void ResizeTop(float p)
+    /// <summary>
+    /// Scales and translates this SubBeam so that the bottom is unaffected but the top is moved inward by <c>p</c>.
+    /// </summary>
+    private void ResizeTop(float p)
     {
         p += 0.00001f;
         float multiplier = Mathf.Abs(0.5f - p);
@@ -194,7 +234,10 @@ public class SubBeam : MonoBehaviour
         transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, multiplier * transform.localScale.z);
     }
 
-    public bool MoveTo(float p)
+    /// <summary>
+    /// Moves the SubBeam over by <c>p</c>. Does some raycasting to ensure that the new position is valid.
+    /// </summary>
+    private bool MoveTo(float p)
     {
         RaycastHit hit;
         Vector3 new_point = transform.TransformPoint(new Vector3(0.0f, p, 0.0f));
@@ -222,6 +265,9 @@ public class SubBeam : MonoBehaviour
         return shouldGetCrossBeams;
     }
 
+    /// <summary>
+    /// Initializes and returns a copy of <c>parentObject</c>.
+    /// </summary>
     private SubBeam CopyBeam(GameObject parentObject)
     {
         GameObject newBeamObject = Instantiate(parentObject);
@@ -231,7 +277,10 @@ public class SubBeam : MonoBehaviour
         return newBeam;
     }
 
-    DeletesIfAskedNicely CrossBeam(BuildingPart buildingPart, Vector3 start, Vector3 end, float xScale)
+    /// <summary>
+    /// Adds a cross beam (intended for adding cros beams beneath windows).
+    /// </summary>
+    private DeletesIfAskedNicely CrossBeam(BuildingPart buildingPart, Vector3 start, Vector3 end, float xScale)
     {
         if (start.y < end.y) return null;
 

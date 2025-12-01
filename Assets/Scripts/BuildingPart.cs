@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Analytics;
 
+/// <summary>
+/// Implements the behavior expected of a building part.
+/// </summary>
 [ExecuteInEditMode]
 [SelectionBase]
 public class BuildingPart : MonoBehaviour
@@ -53,7 +55,14 @@ public class BuildingPart : MonoBehaviour
     [Header("Walls")]
     // Walls are framed in wood if true. 
     public bool woodFramed = false;
-    public bool plastered = false;
+    
+    // The default width of a brick.
+    [Range(0.5f, 2.0f)]
+    public float defaultBrickWidth = 0.1f;
+    
+    // The default height of a brick.
+    [Range(0.5f, 2.0f)]
+    public float defaultBrickHeight = 0.1f;
 
 
     /* Public functions */
@@ -282,9 +291,9 @@ public class BuildingPart : MonoBehaviour
         }
 
         interBuildingPartObjects.Clear();
-
-        // Build supports
         if (!IsAboveGround()) return;
+
+        // Build wooden supports
         if (woodFramed) {
             RaycastHit hit;
             LayerMask mask = LayerMask.GetMask("BuildingPart");
@@ -313,6 +322,7 @@ public class BuildingPart : MonoBehaviour
                     }
                 }
             }
+        // Build stone supports
         } else {
             RaycastHit hit;
             LayerMask mask = LayerMask.GetMask("BuildingPart");

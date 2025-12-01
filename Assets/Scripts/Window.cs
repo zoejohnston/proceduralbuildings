@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// Implements the behavior expected of a window.
+/// </summary>
 [ExecuteInEditMode]
 [SelectionBase]
 public class Window : MonoBehaviour
@@ -17,6 +20,8 @@ public class Window : MonoBehaviour
 
     // We only want to update attachedBuildingPart if the window's localPosition changes
     private Vector3 previousPosition;
+
+    /* Called by Unity Runtime */
     
     // Start is called before the first frame update.
     void Start() {
@@ -28,15 +33,19 @@ public class Window : MonoBehaviour
     {
         ClearDormer();
 
+        // If somehow not attached to a building, return
         if (attachedBuildingPart == null) return;
         if (wall == null) return;
 
+        // If has moved with respect to the building part it is attached to, let the building part know
+        // that it should update itself on the next frame
         if (transform.hasChanged) {
             if (previousPosition != transform.localPosition) attachedBuildingPart.UpdateNextFrame();
             previousPosition = transform.localPosition;
             transform.hasChanged = false;
         }
 
+        // If the window is partially on the roof, build a dormer
         if (IsHalfWay()) {
             Vector3 up = new Vector3(0.0f, (transform.GetChild(0).localScale.y / 2.0f) + 0.02f, 0.0f);
             Vector3 backwards = transform.TransformDirection(Vector3.left);
@@ -61,6 +70,11 @@ public class Window : MonoBehaviour
         attachedBuildingPart.UpdateNextFrame();
     }
 
+    /* Public functions */
+
+    /// <summary>
+    /// Updates the position of the window so that it is placed in the wall it is attached to.
+    /// </summary>
     public void UpdatePosition()
     {   
         if (wall == null) return;
@@ -75,6 +89,35 @@ public class Window : MonoBehaviour
         transform.hasChanged = false;
     }
 
+    /// <summary>
+    /// Returns true if and only if this window is partially on the roof.
+    /// </summary>
+    public bool IsHalfWay()
+    {
+        if (wall == null) return false;
+        if (wall.isTopWall) return false;
+
+        Vector3 direction = new Vector3(0.0f, transform.GetChild(0).localScale.y / 2.0f, 0.0f);
+        Vector3 worldSpaceDirection = transform.TransformDirection(direction);
+        Vector3 topPoint = transform.position + worldSpaceDirection;
+        Vector3 bottomPoint = transform.position - worldSpaceDirection;
+
+        return wall.PointIsWithinWall(bottomPoint) && !wall.PointIsWithinWall(topPoint);
+    }
+
+    /// <summary>
+    /// Attaches this window to <c>buildingPart</c>.
+    /// </summary>
+    /// <param name="buildingPart">The BuildingPart to attach this window to.</param>
+    public void SetSnap(BuildingPart buildingPart) {
+        attachedBuildingPart = buildingPart;
+    }
+    
+    /* Private functions */
+
+    /// <summary>
+    /// Deletes the dormer for this window.
+    /// </summary>
     private void ClearDormer()
     {
         foreach (Transform childTransform in transform.GetChild(3))
@@ -85,6 +128,11 @@ public class Window : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Builds the top of a dormer for this window.
+    /// </summary>
+    /// <param name="localStartPosition">The local position of the start of where shingles should be placed.</param>
+    /// <param name="localEndPosition">The local position of the end of where shingles should be placed.</param>
     private void BuildDormerTop(Vector3 localStartPosition, Vector3 localEndPosition) 
     {
         Vector3 direction = localEndPosition - localStartPosition;
@@ -125,6 +173,13 @@ public class Window : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Builds the sides of a dormer for this window.
+    /// </summary>
+    /// <param name="localStartPosition">The local position of the start of where shingles should be placed.</param>
+    /// <param name="localEndPosition">The local position of the end of where shingles should be placed.</param>
+    /// <param name="verticalDistanceToWall">The vertical distance from the top of the dormer to the roof.</param>
+    /// <param name="flip">Determines which side of the dormer to place shingles on.</param>
     private void BuildDormerSide(Vector3 localStartPosition, Vector3 localEndPosition, float verticalDistanceToWall, float flip)
     {
         Vector3 direction = localEndPosition - localStartPosition;
@@ -155,6 +210,12 @@ public class Window : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// Places ridge shingles along where the horizontal and vertal shingles that make up the dormer meet.
+    /// </summary>
+    /// <param name="localStartPosition">The local position of the start of where shingles should be placed.</param>
+    /// <param name="localEndPosition">The local position of the end of where shingles should be placed.</param>
+    /// <param name="flip">Determines which side of the dormer to place shingles on.</param>
     private void BuildDormerRidge(Vector3 localStartPosition, Vector3 localEndPosition, float flip)
     {
         Vector3 direction = localEndPosition - localStartPosition;
@@ -189,23 +250,5 @@ public class Window : MonoBehaviour
 
             width -= 0.01f;
         }
-    }
-
-    public bool IsHalfWay()
-    {
-        if (wall == null) return false;
-        if (wall.isTopWall) return false;
-
-        Vector3 direction = new Vector3(0.0f, transform.GetChild(0).localScale.y / 2.0f, 0.0f);
-        Vector3 worldSpaceDirection = transform.TransformDirection(direction);
-        Vector3 topPoint = transform.position + worldSpaceDirection;
-        Vector3 bottomPoint = transform.position - worldSpaceDirection;
-
-        return wall.PointIsWithinWall(bottomPoint) && !wall.PointIsWithinWall(topPoint);
-    }
-
-    public void SetSnap(BuildingPart buildingPart)
-    {
-        attachedBuildingPart = buildingPart;
     }
 }

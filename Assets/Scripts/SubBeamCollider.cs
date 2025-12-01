@@ -1,17 +1,20 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Handles collisions with this collider's parent SubBeam
+/// </summary>
 [ExecuteInEditMode]
 public class SubBeamCollider : MonoBehaviour
 {   
     void OnTriggerEnter(Collider other)
     {
+        // If not part of the same BuildingPart, ignore
         if (other.gameObject.transform.root != gameObject.transform.root) return;
 
         GameObject parentObject = gameObject.transform.parent.gameObject;
         SubBeam beam = parentObject.GetComponent<SubBeam>();
 
+        // If the colliding object is a window, queue collisions to be handled next frame
         if (other.gameObject.transform.parent.gameObject.GetComponent<Window>()) {
             Window window = other.gameObject.transform.parent.gameObject.GetComponent<Window>();
 

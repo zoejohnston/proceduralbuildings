@@ -1,5 +1,9 @@
+using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Used to get all the meshes under this building part's storage transform ready for export to VTU.
+/// </summary>
 [ExecuteInEditMode]
 public class ExportPrep : MonoBehaviour
 {
@@ -73,7 +77,7 @@ public class ExportPrep : MonoBehaviour
     private MeshFilter MergeHelper(Transform storageTransform)
     {
         MeshFilter[] meshFilters = storageTransform.GetComponentsInChildren<MeshFilter>();
-        CombineInstance[] instances = new CombineInstance[meshFilters.Length];
+        List<CombineInstance> listOfInstances = new List<CombineInstance>();
 
         for (int i = 0; i < meshFilters.Length; i++)
         {
@@ -81,10 +85,17 @@ public class ExportPrep : MonoBehaviour
             if (!meshFilter.gameObject.activeInHierarchy) continue;
             if (!ShouldInclude(meshFilter.gameObject)) continue;
             
-            instances[i] = new CombineInstance {
+            CombineInstance newInstance = new CombineInstance {
                 mesh = meshFilter.sharedMesh,
                 transform = meshFilter.transform.localToWorldMatrix,
             };
+
+            listOfInstances.Add(newInstance);
+        }
+
+        CombineInstance[] instances = new CombineInstance[listOfInstances.Count];
+        for (int i = 0; i < listOfInstances.Count; i++) {
+            instances[i] = listOfInstances[i];
         }
 
         Mesh combinedMesh = new Mesh();
@@ -119,23 +130,38 @@ public class ExportPrep : MonoBehaviour
 
             // Merges glass pane with others
             if (paneTransform.gameObject.TryGetComponent(out MeshFilter paneMeshFilter)) {
-                CombineInstance[] paneInstances = new CombineInstance[2];
+                if (panes.sharedMesh == null) {
+                    CombineInstance[] paneInstances = new CombineInstance[1];
 
-                paneInstances[0] = new CombineInstance {
-                    mesh = paneMeshFilter.sharedMesh,
-                    transform = paneMeshFilter.transform.localToWorldMatrix,
-                };
-                
-                paneInstances[1] = new CombineInstance {
-                    mesh = panes.sharedMesh,
-                    transform = Matrix4x4.identity,
-                };
+                    paneInstances[0] = new CombineInstance {
+                        mesh = paneMeshFilter.sharedMesh,
+                        transform = paneMeshFilter.transform.localToWorldMatrix,
+                    };
 
-                Mesh combinedBeamMesh = new Mesh();
-                combinedBeamMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-                combinedBeamMesh.CombineMeshes(paneInstances);
+                    Mesh combinedBeamMesh = new Mesh();
+                    combinedBeamMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+                    combinedBeamMesh.CombineMeshes(paneInstances);
 
-                panes.sharedMesh = combinedBeamMesh;
+                    panes.sharedMesh = combinedBeamMesh;
+                } else {
+                    CombineInstance[] paneInstances = new CombineInstance[2];
+
+                    paneInstances[0] = new CombineInstance {
+                        mesh = paneMeshFilter.sharedMesh,
+                        transform = paneMeshFilter.transform.localToWorldMatrix,
+                    };
+                    
+                    paneInstances[1] = new CombineInstance {
+                        mesh = panes.sharedMesh,
+                        transform = Matrix4x4.identity,
+                    };
+
+                    Mesh combinedBeamMesh = new Mesh();
+                    combinedBeamMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+                    combinedBeamMesh.CombineMeshes(paneInstances);
+
+                    panes.sharedMesh = combinedBeamMesh;
+                }
             }
 
             // Merges window frame with other wood beams

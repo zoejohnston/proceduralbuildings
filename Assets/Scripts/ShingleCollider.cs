@@ -1,16 +1,18 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
+/// <summary>
+/// Handles collisions with this collider's parent Shingle
+/// </summary>
 [ExecuteInEditMode]
+[RequireComponent(typeof(BoxCollider))]
 public class ShingleCollider : MonoBehaviour
 {
     void OnTriggerEnter(Collider other)
     {
+        // If not part of the same BuildingPart, ignore
         if (other.gameObject.transform.root != gameObject.transform.root) return;
         
-        // If the colliding object is a window
+        // If the colliding object is a window, queue collisions to be handled next frame
         if (other.gameObject.transform.parent.gameObject.GetComponent<Window>())
         {
             Shingle shingle = transform.parent.gameObject.GetComponent<Shingle>();

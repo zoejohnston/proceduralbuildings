@@ -5,6 +5,9 @@ using UnityEditor.Overlays;
 using UnityEngine.UIElements;
 using UnityEditor.Search;
 
+/// <summary>
+/// A tool for adding Windows to BuildingParts.
+/// </summary>
 [EditorTool("Window Tool", typeof(BuildingPart))]
 public class WindowTool : EditorTool
 {   

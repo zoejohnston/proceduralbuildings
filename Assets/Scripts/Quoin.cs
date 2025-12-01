@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [ExecuteInEditMode]
@@ -18,5 +16,6 @@ public class Quoin : MonoBehaviour
     public void DeletePls() {
         delete = true;
         gameObject.transform.GetChild(1).gameObject.GetComponent<MeshRenderer>().enabled = false;
+        gameObject.transform.GetChild(0).gameObject.SetActive(false);
     }
 }
