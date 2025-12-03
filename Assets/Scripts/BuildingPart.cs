@@ -216,13 +216,15 @@ public class BuildingPart : MonoBehaviour
             transform.hasChanged = false;
         }
 
-        if (scaleUpdated) {   
+        if (scaleUpdated) {  
+            Debug.Log("rebuilding...");
             Rebuild(); 
             HandleInteractions();
             handleInterBuildingPartInteractions = true;
         }
 
         if (handleInterBuildingPartInteractions) {
+            Debug.Log("handling inter building interactions...");
             InterBuildingPartInteractions();
         }
     }
@@ -250,12 +252,12 @@ public class BuildingPart : MonoBehaviour
                 if (childObject.TryGetComponent(out Brick brick)) brickPool.AddToBrickPool(brick);
             }
         } else {*/
-            foreach (Transform childTransform in brickStorage.transform) {
-                GameObject childObject = childTransform.gameObject;
+        foreach (Transform childTransform in brickStorage.transform) {
+            GameObject childObject = childTransform.gameObject;
 
-                if (childObject.TryGetComponent(out Quoin quoinToDelete)) quoinToDelete.DeletePls();
-                if (childObject.TryGetComponent(out Brick brickToDelete)) brickToDelete.DeletePls();
-            }
+            if (childObject.TryGetComponent(out Quoin quoinToDelete)) quoinToDelete.DeletePls();
+            if (childObject.TryGetComponent(out Brick brickToDelete)) brickToDelete.DeletePls();
+        }
         //}
 
         foreach (Transform childTransform in shingleStorage.transform) {

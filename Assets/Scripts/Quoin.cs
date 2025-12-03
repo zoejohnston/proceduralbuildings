@@ -7,11 +7,11 @@ using UnityEngine;
 public class Quoin : MonoBehaviour
 {
     // Setting this to true will let the Quoin know to delete itself on the next frame
+    [HideInInspector]
     private bool delete = false;
 
     // Update is called once per frame
-    void Update()
-    {
+    void Update() {
         if (delete) {
             DestroyImmediate(gameObject);
         }

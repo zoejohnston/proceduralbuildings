@@ -8,20 +8,29 @@ using UnityEngine;
 public class Brick : MonoBehaviour
 {
     // Setting this to true will let the Brick know to delete itself on the next frame
+    [HideInInspector]
     private bool delete = false;
 
     // Stores information that will be used to determine if this brick should be split in two for
     // aesthetic effect
+    [HideInInspector]
     public float splitNoise = 0.0f;
+    [HideInInspector]
     public float splitLocation = 0.0f;
+    [HideInInspector]
     public bool shouldntSplit = true;
 
     // Used to keep track of updates to the brick that need to happen on the next frame
     // See QueueBrickCollisions() for more info
+    [HideInInspector]
     public List<Vector3> horizontalMins = new List<Vector3>();
+    [HideInInspector]
     public List<Vector3> horizontalMaxes = new List<Vector3>();
+    [HideInInspector]
     public List<Vector3> verticalMins = new List<Vector3>();
+    [HideInInspector]
     public List<Vector3> verticalMaxes = new List<Vector3>();
+    [HideInInspector]
     public int collisionCount = 0;
 
     // Update is called once per frame

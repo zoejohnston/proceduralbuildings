@@ -11,6 +11,10 @@ using UnityEditor.Search;
 [EditorTool("Window Tool", typeof(BuildingPart))]
 public class WindowTool : EditorTool
 {   
+    /// <summary>
+    /// An overlay that appears when the window tool is active.
+    /// Adapted from: https://docs.unity3d.com/2022.3/Documentation/ScriptReference/Overlays.Overlay.html
+    /// </summary>
     [Overlay(defaultDisplay = true)]
     public class WindowSelectorOverlay : Overlay, ITransientOverlay
     {   
@@ -33,12 +37,15 @@ public class WindowTool : EditorTool
         public bool visible => true;
     }
 
+    // Used to set an icon for the tool
     [SerializeField]
     private Texture2D toolIcon;
     private GUIContent toolInfo;
 
+    // The overlay defined above
     private WindowSelectorOverlay overlay;
 
+    // Create toolInfo if not yet done
     private void OnEnable()
     {
         if (toolInfo == null) {
@@ -46,21 +53,25 @@ public class WindowTool : EditorTool
         }
     }
 
+    // Add toolInfo to the tool
     public override GUIContent toolbarIcon
     {
         get { return toolInfo; }
     }
 
+    // Adds the overlay to the scene viewer
     public override void OnActivated()
     {
         SceneView.AddOverlayToActiveView(overlay = new WindowSelectorOverlay());
     }
 
+    // Removes the overlay to the scene viewer
     public override void OnWillBeDeactivated()
     {
         SceneView.RemoveOverlayFromActiveView(overlay);
     }
 
+    // Implements the window tool
     public override void OnToolGUI(EditorWindow _)
     {
         if (overlay == null) return;
@@ -68,20 +79,20 @@ public class WindowTool : EditorTool
 
         Event e = Event.current;
         Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
-
         LayerMask layerMask = LayerMask.GetMask("Walls");
 
-        if (Physics.Raycast(ray, out RaycastHit hit, 10.0f, layerMask))
-        {
-            if (hit.collider.gameObject.TryGetComponent<WallCollider>(out WallCollider wallCollider))
-            {
+        // If the mouse is on top of a wall...
+        if (Physics.Raycast(ray, out RaycastHit hit, 10.0f, layerMask)) {
+            if (hit.collider.gameObject.TryGetComponent<WallCollider>(out WallCollider wallCollider)) {
                 Transform buildingPartTransform = wallCollider.transform.root;
 
-                if (buildingPartTransform.TransformDirection(wallCollider.normal) == hit.normal)
-                {
+                // and the part of the wall it is hovering over is the outside surface...
+                if (buildingPartTransform.TransformDirection(wallCollider.normal) == hit.normal) {
+                    // draw an indicator to show where a window will be placed
                     Handles.color = Color.white;
                     Handles.DrawWireDisc(hit.point, hit.normal, 0.1f);
 
+                    // Add the window to the wall on click
                     if (e.type == EventType.MouseDown && e.button == 0) {
                         BuildingPart buildingPart = buildingPartTransform.gameObject.GetComponent<BuildingPart>();
                         wallCollider.PlaceWindow(overlay.window, buildingPart, hit.point);

@@ -8,6 +8,7 @@ using UnityEngine;
 public class Shingle : MonoBehaviour
 {
     // Setting this to true will let the Shingle know to delete itself on the next frame
+    [HideInInspector]
     private bool delete = false;
 
     // Extra meshes used when this shingle is right on the edge of the roof
@@ -16,8 +17,11 @@ public class Shingle : MonoBehaviour
 
     // Used to keep track of updates to the Shingle that need to happen on the next frame
     // See QueueShingleCollisions() for more info
+    [HideInInspector]
     public List<Vector3> horizontalMins = new List<Vector3>();
+    [HideInInspector]
     public List<Vector3> horizontalMaxes = new List<Vector3>();
+    [HideInInspector]
     public int collisionCount = 0;
 
     // Update is called once per frame

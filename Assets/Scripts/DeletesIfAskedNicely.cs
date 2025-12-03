@@ -7,8 +7,10 @@ using UnityEngine;
 public class DeletesIfAskedNicely : MonoBehaviour
 {
     // Setting this to true will let the WoodBlock know to delete itself on the next frame
+    [HideInInspector]
     private bool delete = false;
     // Indicates if the mesh of this object has been switched
+    [HideInInspector]
     public bool switchedMeshes = false;
     // Another mesh to use as needed
     public Mesh otherMesh;

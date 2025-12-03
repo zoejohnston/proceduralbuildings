@@ -7,6 +7,7 @@ using UnityEngine;
 public class RidgeShingle : MonoBehaviour
 {
     // Setting this to true will let the Quoin know to delete itself on the next frame
+    [HideInInspector]
     private bool delete = false;
     // An alternate mesh for the ridge shingle that doesn't have an angle to it
     public Mesh flatMesh;

@@ -97,6 +97,7 @@ public static class BrickHelpers
                 // Will be used later to split some bricks in two to add visual interest
                 newBrick.splitNoise = Mathf.PerlinNoise(i / 0.8f, j / 0.8f);
                 newBrick.splitLocation = 0.7f * (Mathf.PerlinNoise(i / 0.3f, j / 0.3f) - 0.5f);
+                newBrick.shouldntSplit = false;
 
                 upTo += newWidth;
             }
@@ -284,6 +285,7 @@ public static class BrickHelpers
                 // Will be used later to split some bricks in two to add visual interest
                 newBrick.splitNoise = Mathf.PerlinNoise(i / 0.8f, j / 0.8f);
                 newBrick.splitLocation = 0.7f * (Mathf.PerlinNoise(i / 0.3f, j / 0.3f) - 0.5f);
+                newBrick.shouldntSplit = false;
 
                 upTo += newWidth;
             }

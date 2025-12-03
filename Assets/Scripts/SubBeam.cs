@@ -8,24 +8,34 @@ using UnityEngine;
 public class SubBeam : MonoBehaviour
 {   
     // Setting this to true will let the Beam know to delete itself on the next frame
+    [HideInInspector]
     private bool delete = false;
     // If this sub beam has already been moved by a collision, its behaviour should change.
     // This helps to keep track of that!
+    [HideInInspector]
     public bool wasMovedByCollision = false;
     // Sub beams placed on the wall of an A-frame roof shouldn't split in two in the same way
     // as regular sub beams do. This is used to define how this sub beam should behave.
+    [HideInInspector]
     public bool isRoofBeam = false;
 
     // Used to keep track of updates to the beam that need to happen on the next frame
     // See QueueBeamCollisions() for more info
+    [HideInInspector]
     public List<Vector3> horizontalMins = new List<Vector3>();
+    [HideInInspector]
     public List<Vector3> horizontalMaxes = new List<Vector3>();
+    [HideInInspector]
     public List<Vector3> verticalMins = new List<Vector3>();
+    [HideInInspector]
     public List<Vector3> verticalMaxes = new List<Vector3>();
+    [HideInInspector]
     public int collisionCount = 0;
 
     // If possible, these will be populated with angled support beams attached to this sub beam
+    [HideInInspector]
     public DeletesIfAskedNicely rightCrossBeam;
+    [HideInInspector]
     public DeletesIfAskedNicely leftCrossBeam;
 
     /* Called by Unity Runtime */

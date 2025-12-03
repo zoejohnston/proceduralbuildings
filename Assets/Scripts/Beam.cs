@@ -8,12 +8,16 @@ using UnityEngine;
 public class Beam : MonoBehaviour
 {
     // Setting this to true will let the Beam know to delete itself on the next frame
+    [HideInInspector]
     private bool delete = false;
 
     // Used to keep track of updates to the beam that need to happen on the next frame
     // See QueueBeamCollisions() for more info
+    [HideInInspector]
     public List<Vector3> horizontalMins = new List<Vector3>();
+    [HideInInspector]
     public List<Vector3> horizontalMaxes = new List<Vector3>();
+    [HideInInspector]
     public int collisionCount = 0;
 
     // LateUpdate is called once per frame

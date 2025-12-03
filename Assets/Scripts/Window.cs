@@ -8,14 +8,13 @@ using UnityEngine;
 public class Window : MonoBehaviour
 {
     // Windows keep track of the BuildingPart they are attached to and which wall they are on
+    [HideInInspector]
     public BuildingPart attachedBuildingPart;
+    [HideInInspector]
     public WallCollider wall;
 
-    // Some useful prefabs
-    public Shingle shingle;
-    public RidgeShingle ridgeShingle;
-
     // Used to set how far into the wall the window should sit
+    [Range(-0.1f, 0.1f)]
     public float offset;
 
     // We only want to update attachedBuildingPart if the window's localPosition changes
@@ -111,6 +110,7 @@ public class Window : MonoBehaviour
     /// <param name="buildingPart">The BuildingPart to attach this window to.</param>
     public void SetSnap(BuildingPart buildingPart) {
         attachedBuildingPart = buildingPart;
+        attachedBuildingPart.UpdateNextFrame();
     }
     
     /* Private functions */
@@ -149,7 +149,7 @@ public class Window : MonoBehaviour
             float widthOfShingle = width / numShinglesWide;
 
             for (int j = 0; j < numShinglesWide; j++) {
-                Shingle newShingle = Instantiate(shingle);
+                Shingle newShingle = Instantiate(attachedBuildingPart.shingle);
                 newShingle.DisableCollisions();
 
                 newShingle.transform.position = new Vector3(
@@ -192,7 +192,7 @@ public class Window : MonoBehaviour
 
         for (int i = 0; i < numShinglesLong; i++)
         {
-            Shingle newShingle = Instantiate(shingle);
+            Shingle newShingle = Instantiate(attachedBuildingPart.shingle);
             newShingle.DisableCollisions();
 
             newShingle.transform.position = new Vector3(
@@ -233,7 +233,7 @@ public class Window : MonoBehaviour
 
         for (int i = 0; i < numShinglesLong; i++)
         {
-            RidgeShingle newShingle = Instantiate(ridgeShingle);
+            RidgeShingle newShingle = Instantiate(attachedBuildingPart.ridgeShingle);
 
             newShingle.transform.position = new Vector3(
                 localStartPosition.x - (i * lengthOfShingleHorizontally),

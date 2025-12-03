@@ -6,34 +6,41 @@ using UnityEngine;
 [ExecuteInEditMode]
 public class BuildingPartColliders : MonoBehaviour
 {
-    [Header("Meshes")]
-    // 
+    // The base meshes used to build colliders for the building part
+    [HideInInspector]
     public Mesh wallMesh;
+    [HideInInspector]
     public Mesh roofRidgeMesh;
+    [HideInInspector]
     public Mesh roofMesh;
 
-    [Header("Children")]
-    // 
+    // Quick access to this component's tranform's children
+    [HideInInspector]
     public GameObject wallParent;
+    [HideInInspector]
     public GameObject roofParent;
+    [HideInInspector]
     public GameObject mainCollider;
 
-    [Header("Serialized Fields")]
-    [SerializeField]
-    GameObject[] walls;
-    [SerializeField]
-    GameObject[] wallTops;
-    [SerializeField]
-    Mesh wallTopMesh;
+    // Quick and organized access to wall granchildren
+    [HideInInspector]
+    public GameObject[] walls;
+    [HideInInspector]
+    public GameObject[] wallTops;
+    // Modified wall collider mesh
+    [HideInInspector]
+    public Mesh wallTopMesh;
 
-    [SerializeField]
-    GameObject[] ridgeRoofs;
-    [SerializeField]
-    GameObject[] roofs;
-    [SerializeField]
-    Mesh ridgeRoofMeshInternal;
-    [SerializeField]
-    Mesh roofMeshInternal;
+    // Quick and organized access to roof granchildren
+    [HideInInspector]
+    public GameObject[] ridgeRoofs;
+    [HideInInspector]
+    public GameObject[] roofs;
+    // Modified roof collider meshes
+    [HideInInspector]
+    public Mesh ridgeRoofMeshInternal;
+    [HideInInspector]
+    public Mesh roofMeshInternal;
 
     /// <summary>
     /// Returns all the wall colliders for this building part.
@@ -49,8 +56,7 @@ public class BuildingPartColliders : MonoBehaviour
             wallColliders[i] = walls[i].GetComponent<WallCollider>();
         }
 
-        if (!noTopWalls)
-        {
+        if (!noTopWalls) {
             for (int i = 0; i < 2; i++) {
                 wallColliders[i + 4] = wallTops[i].GetComponent<WallCollider>();
             }
@@ -62,19 +68,16 @@ public class BuildingPartColliders : MonoBehaviour
     /// <summary>
     /// Updates the top wall collider mesh so that it reflects the curve of the roof.
     /// </summary>
+    /// <param name="buildingPart">The associated building part.</param>
     private void UpdateWallTopVertices(BuildingPart buildingPart)
     {
         Vector3[] vertices = wallMesh.vertices;
 
-        for (var i = 0; i < vertices.Length; i++)
-        {
-            if (vertices[i].x > 0.0f)
-            {
+        for (var i = 0; i < vertices.Length; i++) {
+            if (vertices[i].x > 0.0f) {
                 float powerBase = 1.0f - (2.0f * vertices[i].x);
                 vertices[i].y = Mathf.Pow(powerBase, buildingPart.roofCurve) / 2.0f;
-            }
-            else if (vertices[i].x < 0.0f)
-            {
+            } else if (vertices[i].x < 0.0f) {
                 float powerBase = 1.0f + (2.0f * vertices[i].x);
                 vertices[i].y = Mathf.Pow(powerBase, buildingPart.roofCurve) / 2.0f;
             }
@@ -91,20 +94,18 @@ public class BuildingPartColliders : MonoBehaviour
     /// Updates the roof collider mesh so that it reflects the curve of the roof. Works with
     /// UpdateRoofVertices to cover the whole roof.
     /// </summary>
+    /// <param name="buildingPart">The associated building part.</param>
     private void UpdateRidgeRoofVertices(BuildingPart buildingPart)
     {
         Vector3[] vertices = roofRidgeMesh.vertices;
 
-        for (var i = 0; i < vertices.Length; i++)
-        {
-            if (vertices[i].z > 0.0f)
-            {
+        for (var i = 0; i < vertices.Length; i++) {
+            if (vertices[i].z > 0.0f) {
                 float powerBase = 1.0f - (2.0f * vertices[i].z);
                 vertices[i].y = Mathf.Pow(powerBase, buildingPart.roofCurve) / 2.0f;
             }
 
-            if (buildingPart.ridgeLength > 0.2f)
-            {
+            if (buildingPart.ridgeLength > 0.2f) {
                 float start = 1.0f - buildingPart.ridgeLength;
                 float lerp = start + ((1.0f - start) * (2.0f * vertices[i].z));
                 vertices[i].x = lerp * vertices[i].x;
@@ -122,6 +123,7 @@ public class BuildingPartColliders : MonoBehaviour
     /// Updates the roof collider mesh so that it reflects the curve of the roof. Works with
     /// UpdateRidgeRoofVertices to cover the whole roof.
     /// </summary>
+    /// <param name="buildingPart">The associated building part.</param>
     private void UpdateRoofVertices(BuildingPart buildingPart)
     {
         Vector3[] vertices = roofMesh.vertices;
@@ -172,13 +174,10 @@ public class BuildingPartColliders : MonoBehaviour
         walls[3].transform.localScale = new Vector3(0.1f, buildingPartScale.y, zScale - 0.1f);
         walls[3].transform.localPosition = new Vector3(-xScale / 2.0f, 0.0f, 0.0f);
 
-        if (noTopWalls)
-        {
+        if (noTopWalls) {
             wallTops[0].SetActive(false);
             wallTops[1].SetActive(false);
-        }
-        else
-        {
+        } else {
             wallTops[0].SetActive(true);
             wallTops[0].transform.localScale = new Vector3(xScale - 0.1f, buildingPart.roofHeight * 2.0f, 0.1f);
             wallTops[0].transform.localPosition = new Vector3(0.0f, (buildingPartScale.y / 2.0f) + 0.05f, zScale / 2.0f);
