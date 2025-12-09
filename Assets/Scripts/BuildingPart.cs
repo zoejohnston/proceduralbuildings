@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 /// <summary>
@@ -19,7 +20,7 @@ public class BuildingPart : MonoBehaviour
     public List<GameObject> interBuildingPartObjects = new List<GameObject>();
 
     // Indicates if we should rebuild the building on the next frame
-    private bool scaleUpdated = false;
+    private bool shouldBeRebuilt = false;
 
     /*  Public variables */
 
@@ -86,22 +87,20 @@ public class BuildingPart : MonoBehaviour
     /// <param name="scaleDelta">The amount to modify the inner scaling by.</param>
     public void UpdateScale(Vector3 scaleDelta)
     {
+        bool shouldTranslate = true;
         innerScale += scaleDelta;
 
-        if (innerScale.x < Mathf.Epsilon) innerScale.x = Mathf.Epsilon;
-        if (innerScale.y < Mathf.Epsilon) innerScale.y = Mathf.Epsilon;
-        if (innerScale.z < Mathf.Epsilon) innerScale.z = Mathf.Epsilon;
+        if (innerScale.x > 5.0f) { innerScale.x = 5.0f; shouldTranslate = false; }
+        if (innerScale.y > 5.0f) { innerScale.y = 5.0f; shouldTranslate = false; }
+        if (innerScale.z > 5.0f) { innerScale.z = 5.0f; shouldTranslate = false; }
 
-        if (innerScale.x > 5.0f) innerScale.x = 5.0f;
-        if (innerScale.y > 5.0f) innerScale.y = 5.0f;
-        if (innerScale.z > 5.0f) innerScale.z = 5.0f;
+        if (innerScale.x < 0.5f) { innerScale.x = 0.5f; shouldTranslate = false; }
+        if (innerScale.y < 0.3f) { innerScale.y = 0.3f; shouldTranslate = false; }
+        if (innerScale.z < 0.5f) { innerScale.z = 0.5f; shouldTranslate = false; }
 
-        if (innerScale.x < 0.5f) innerScale.x = 0.5f;
-        if (innerScale.y < 0.3f) innerScale.y = 0.3f;
-        if (innerScale.z < 0.8f) innerScale.z = 0.8f;
-        
-        scaleUpdated = true;
+        if (shouldTranslate) transform.Translate(0.5f * scaleDelta.y * Vector3.up);
         transform.GetChild(0).localScale = innerScale;
+        shouldBeRebuilt = true;
     }
 
     /// <summary>
@@ -117,7 +116,7 @@ public class BuildingPart : MonoBehaviour
     /// </summary>
     public void UpdateNextFrame()
     {
-        scaleUpdated = true;
+        shouldBeRebuilt = true;
     }
 
     /// <summary>
@@ -216,15 +215,13 @@ public class BuildingPart : MonoBehaviour
             transform.hasChanged = false;
         }
 
-        if (scaleUpdated) {  
-            Debug.Log("rebuilding...");
+        if (shouldBeRebuilt) {  
             Rebuild(); 
             HandleInteractions();
             handleInterBuildingPartInteractions = true;
         }
 
         if (handleInterBuildingPartInteractions) {
-            Debug.Log("handling inter building interactions...");
             InterBuildingPartInteractions();
         }
     }
@@ -243,22 +240,12 @@ public class BuildingPart : MonoBehaviour
     /// </summary>
     private void Rebuild() {
         // Getting rid of all existing bricks, beams, and shingles
-        
-        /*if (brickStorage.TryGetComponent(out BrickPool brickPool)) {
-            foreach (Transform childTransform in brickStorage.transform) {
-                GameObject childObject = childTransform.gameObject;
-
-                if (childObject.TryGetComponent(out Quoin quoin)) brickPool.AddToQuoinPool(quoin);
-                if (childObject.TryGetComponent(out Brick brick)) brickPool.AddToBrickPool(brick);
-            }
-        } else {*/
         foreach (Transform childTransform in brickStorage.transform) {
             GameObject childObject = childTransform.gameObject;
 
             if (childObject.TryGetComponent(out Quoin quoinToDelete)) quoinToDelete.DeletePls();
             if (childObject.TryGetComponent(out Brick brickToDelete)) brickToDelete.DeletePls();
         }
-        //}
 
         foreach (Transform childTransform in shingleStorage.transform) {
             GameObject childObject = childTransform.gameObject;
@@ -289,7 +276,7 @@ public class BuildingPart : MonoBehaviour
         InitRoof();
         if (woodFramed) InitBeams();
 
-        scaleUpdated = false;
+        shouldBeRebuilt = false;
     }
 
     /// <summary>
@@ -381,8 +368,8 @@ public class BuildingPart : MonoBehaviour
                             BrickHelpers.BuildSupport(lerped, hit.point, this);
 
                             // 3. if we are able to support the corners with small supports we make note of it
-                            if (k == 0) cornerSupported[(i + 1) / 2, (j + 1) / 2] = true;
-                            if (k == numSupports) cornerSupported[((xFlip * i) + 1) / 2, ((zFlip * j) + 1) / 2] = true;
+                            if (k < 2) cornerSupported[(i + 1) / 2, (j + 1) / 2] = true;
+                            if (k > numSupports - 2) cornerSupported[((xFlip * i) + 1) / 2, ((zFlip * j) + 1) / 2] = true;
                         }
                     }
                 }
@@ -417,8 +404,6 @@ public class BuildingPart : MonoBehaviour
     {
         float shrink = 0.2f;
         float height = innerScale.y;
-
-        if (!brickStorage.TryGetComponent(out BrickPool brickPool)) return;
 
         if (!woodFramed) {
             BrickHelpers.InitQuoins(1.0f, height, 1.0f, this);
@@ -491,6 +476,7 @@ public class BuildingPart : MonoBehaviour
     /// </summary>
     private void InitRoof()
     {
+        if (roofHeight <= 0.1f) return;
         float ridgeAmount = innerScale.z / 2.0f;
 
         if (ridgeLength > 0.2f) {

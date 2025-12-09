@@ -121,7 +121,7 @@ public class ExportMenu : MonoBehaviour
         panesToExportMeshFilter.sharedMesh = combinedPaneMesh;
 
         // The filename used is based on the name of the scene you are workin in.
-        string fileName = "Exports/" + SceneManager.GetActiveScene().name + ".fbx";
+        string fileName = "Exports/" + SceneManager.GetActiveScene().name + DateTime.Now.ToString("yyyy-MM-dd-HHmmss") + ".fbx";
         string filePath = Path.Combine(Application.dataPath, fileName);
 
         ExportWorkaround(exportParent, filePath);

@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
@@ -7,7 +8,7 @@ using UnityEngine;
 public class BuildingPartColliders : MonoBehaviour
 {
     // The base meshes used to build colliders for the building part
-    [HideInInspector]
+    //[HideInInspector]
     public Mesh wallMesh;
     [HideInInspector]
     public Mesh roofRidgeMesh;
@@ -28,7 +29,7 @@ public class BuildingPartColliders : MonoBehaviour
     [HideInInspector]
     public GameObject[] wallTops;
     // Modified wall collider mesh
-    [HideInInspector]
+    //[HideInInspector]
     public Mesh wallTopMesh;
 
     // Quick and organized access to roof granchildren
@@ -229,6 +230,15 @@ public class BuildingPartColliders : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        ridgeRoofMeshInternal = new Mesh();
+        roofMeshInternal = new Mesh();
+        wallTopMesh = new Mesh();
+
+        wallTopMesh.vertices = wallMesh.vertices;
+        wallTopMesh.triangles = wallMesh.triangles;
+        wallTopMesh.RecalculateBounds();
+        wallTopMesh.RecalculateNormals();
+        
         UpdateColliders();
     }
 

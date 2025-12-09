@@ -39,7 +39,7 @@ public class Window : MonoBehaviour
         // If has moved with respect to the building part it is attached to, let the building part know
         // that it should update itself on the next frame
         if (transform.hasChanged) {
-            if (previousPosition != transform.localPosition) attachedBuildingPart.UpdateNextFrame();
+            if (previousPosition != transform.localPosition) { attachedBuildingPart.UpdateNextFrame(); }
             previousPosition = transform.localPosition;
             transform.hasChanged = false;
         }
@@ -66,7 +66,7 @@ public class Window : MonoBehaviour
     // This function is called when the Window will be destroyed
     void OnDestroy()
     {
-        attachedBuildingPart.UpdateNextFrame();
+        if (attachedBuildingPart != null) attachedBuildingPart.UpdateNextFrame();
     }
 
     /* Public functions */

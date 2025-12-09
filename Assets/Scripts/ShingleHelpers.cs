@@ -321,11 +321,11 @@ public static class ShingleHelpers
             newBeam.transform.localScale = new Vector3(0.08f, 0.05f, lengthOfShingle);
             newBeam.transform.SetParent(buildingPart.beamStorage.transform, false);
 
-            Beam newBeam2 = Object.Instantiate(buildingPart.beam);
-            newBeam2.transform.position = newShingle.transform.position;
-            newBeam2.transform.Translate(new Vector3(-side * 0.01f, -0.03f, -which * 0.375f), Space.Self);
-            newBeam2.transform.localScale = new Vector3(0.7f, 0.7f, 0.8f);
+            DeletesIfAskedNicely newBeam2 = Object.Instantiate(buildingPart.simpleBeam);
             newBeam2.transform.SetParent(buildingPart.beamStorage.transform, false);
+            newBeam2.transform.position = newBeam.transform.TransformPoint(0.5f * Vector3.forward);
+            newBeam2.transform.Translate(new Vector3(-side * 0.01f, 0.0f, which * 0.025f), Space.Self);
+            newBeam2.transform.localScale = new Vector3(0.04f, 0.04f, 0.1f);
         }
 
         // Orients the shingle

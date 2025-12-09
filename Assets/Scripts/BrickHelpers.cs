@@ -6,7 +6,7 @@ using UnityEngine;
 public static class BrickHelpers
 {   
     /// <summary>
-    /// Fills the array <c>noise</c> with Perlin noise. The sum of a row of noise is always equal to one.
+    /// Fills the array <c>noise</c> with Perlin noise. The sum of a row of noise is always equal to zero.
     /// </summary>
     /// <param name="noise">The array to fill. Should be an <c>m</c> by <c>n</c> array.</param>
     /// <param name="numBricksTall">The first dimension of the array, <c>m</c>.</param>
