@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using UnityEditor;
 using UnityEngine;
 
 /// <summary>
@@ -88,19 +89,23 @@ public class BuildingPart : MonoBehaviour
     public void UpdateScale(Vector3 scaleDelta)
     {
         bool shouldTranslate = true;
-        innerScale += scaleDelta;
+        Vector3 tempInnerScale = innerScale + scaleDelta;
 
-        if (innerScale.x > 5.0f) { innerScale.x = 5.0f; shouldTranslate = false; }
-        if (innerScale.y > 5.0f) { innerScale.y = 5.0f; shouldTranslate = false; }
-        if (innerScale.z > 5.0f) { innerScale.z = 5.0f; shouldTranslate = false; }
+        if (tempInnerScale.x > 5.0f) { tempInnerScale.x = 5.0f; shouldTranslate = false; }
+        if (tempInnerScale.y > 5.0f) { tempInnerScale.y = 5.0f; shouldTranslate = false; }
+        if (innerScale.z > 5.0f) { tempInnerScale.z = 5.0f; shouldTranslate = false; }
 
-        if (innerScale.x < 0.5f) { innerScale.x = 0.5f; shouldTranslate = false; }
-        if (innerScale.y < 0.3f) { innerScale.y = 0.3f; shouldTranslate = false; }
-        if (innerScale.z < 0.5f) { innerScale.z = 0.5f; shouldTranslate = false; }
+        if (tempInnerScale.x < 0.5f) { tempInnerScale.x = 0.5f; shouldTranslate = false; }
+        if (tempInnerScale.y < 0.3f) { tempInnerScale.y = 0.3f; shouldTranslate = false; }
+        if (tempInnerScale.z < 0.5f) { tempInnerScale.z = 0.5f; shouldTranslate = false; }
 
         if (shouldTranslate) transform.Translate(0.5f * scaleDelta.y * Vector3.up);
-        transform.GetChild(0).localScale = innerScale;
+        transform.GetChild(0).localScale = tempInnerScale;
         shouldBeRebuilt = true;
+
+        SerializedObject serializedObject = new SerializedObject(this);
+        serializedObject.FindProperty("innerScale").vector3Value = tempInnerScale;
+        serializedObject.ApplyModifiedProperties();
     }
 
     /// <summary>

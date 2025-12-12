@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Used to get all the meshes under this building part's storage transform ready for export to VTU.
+/// Used to get all the meshes under this building part's storage transform ready for export to FBX.
 /// </summary>
 [ExecuteInEditMode]
 public class ExportPrep : MonoBehaviour

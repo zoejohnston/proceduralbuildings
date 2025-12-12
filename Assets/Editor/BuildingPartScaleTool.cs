@@ -44,7 +44,7 @@ public class BuildingPartScaleTool : EditorTool
         foreach (var trs in Selection.transforms)
             selectedTransforms.Add(trs);
 
-        Undo.RecordObjects(Selection.transforms, "Building Part");
+        Undo.RecordObjects(Selection.transforms, "Building Part Scale Tool");
     }
     
     // Determines if the tool should be vailable or not
